@@ -1,0 +1,507 @@
+/* NetCity v2.0 Stylesheet - All classes prefixed with nc- */
+
+.nc-fullwindow-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background-color: #0d1b2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #e0e6ed;
+}
+
+.nc-game-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #0d1b2a;
+  overflow: hidden;
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: none;
+}
+
+/* Top bar */
+.nc-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background-color: #1b263b;
+  border-bottom: 2px solid #283850;
+  gap: 12px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  z-index: 10;
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+.nc-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nc-topbar-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 290px;
+}
+
+.nc-topbar-coins {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  background-color: #0d1b2a;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #415a77;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nc-coins-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.nc-coins-value {
+  color: #ffd166;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+.nc-topbar-goal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  background-color: rgba(56, 189, 248, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #e0e6ed;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nc-goal-tag {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.nc-goal-note {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.78rem;
+}
+
+.nc-btn-tutorial {
+  background-color: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.nc-btn-tutorial:hover {
+  background-color: #0369a1;
+}
+
+.nc-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 4px;
+  flex-shrink: 1;
+}
+
+.nc-topbar-center::-webkit-scrollbar {
+  display: none;
+}
+
+.nc-tool-btn {
+  background-color: #283850;
+  color: #e0e6ed;
+  border: 2px solid transparent;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.nc-tool-btn:hover:not(:disabled) {
+  background-color: #3b4d63;
+}
+
+.nc-tool-btn.nc-active-twisted_pair {
+  border-color: #e8903a;
+  background-color: rgba(232, 144, 58, 0.2);
+  color: #ffaa5a;
+}
+
+.nc-tool-btn.nc-active-coaxial {
+  border-color: #b08968;
+  background-color: rgba(176, 137, 104, 0.2);
+  color: #ddb892;
+}
+
+.nc-tool-btn.nc-active-multimode_fiber {
+  border-color: #4cc9f0;
+  background-color: rgba(76, 201, 240, 0.2);
+  color: #64d8f8;
+}
+
+.nc-tool-btn.nc-active-single_mode_fiber {
+  border-color: #9d8cff;
+  background-color: rgba(157, 140, 255, 0.2);
+  color: #c4bbf0;
+}
+
+/* Hardware Device Active Styles */
+.nc-tool-btn.nc-active-access_point {
+  border-color: #06d6a0;
+  background-color: rgba(6, 214, 160, 0.25);
+  color: #06d6a0;
+  box-shadow: 0 0 10px rgba(6, 214, 160, 0.4);
+}
+
+.nc-tool-btn.nc-active-cabinet {
+  border-color: #94a3b8;
+  background-color: rgba(148, 163, 184, 0.25);
+  color: #f1f5f9;
+  box-shadow: 0 0 10px rgba(148, 163, 184, 0.4);
+}
+
+.nc-tool-btn.nc-active-hub {
+  border-color: #a78bfa;
+  background-color: rgba(167, 139, 250, 0.25);
+  color: #c4b5fd;
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
+}
+
+.nc-tool-btn.nc-active-switch {
+  border-color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.nc-tool-btn.nc-active-router {
+  border-color: #e63946;
+  background-color: rgba(230, 57, 70, 0.25);
+  color: #ff6b6b;
+  box-shadow: 0 0 10px rgba(230, 57, 70, 0.4);
+}
+
+.nc-tool-btn.nc-active-dhcp_server {
+  border-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.nc-tool-btn.nc-active-dns_server {
+  border-color: #8b5cf6;
+  background-color: rgba(139, 92, 246, 0.25);
+  color: #a78bfa;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+.nc-tool-btn.nc-active-web_server {
+  border-color: #0284c7;
+  background-color: rgba(2, 132, 199, 0.25);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+}
+
+.nc-tool-btn.nc-active-email_server {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+/* Pickup / Move Tool Active Style */
+.nc-tool-btn.nc-active-pickup {
+  border-color: #ffd166;
+  background-color: rgba(255, 209, 102, 0.25);
+  color: #ffd166;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.45);
+}
+
+.nc-tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nc-tool-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.nc-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.nc-action-btn {
+  background-color: #283850;
+  color: #e0e6ed;
+  border: 1px solid #415a77;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  text-align: center;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease;
+}
+
+.nc-action-btn:hover {
+  background-color: #3b4d63;
+  color: #ffffff;
+}
+
+.nc-action-btn.nc-btn-pause {
+  background-color: #1e3a8a;
+  border-color: #3b82f6;
+  color: #bfdbfe;
+  min-width: 76px;
+}
+
+/* Canvas Area */
+.nc-canvas-wrapper {
+  flex: 1 1 0%;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  background-color: #070e17;
+  touch-action: none;
+}
+
+.nc-canvas {
+  display: block;
+  background-color: #0d1b2a;
+  cursor: crosshair;
+}
+
+/* Viewport / Zoom Controls HUD */
+.nc-zoom-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 20;
+}
+
+.nc-zoom-btn {
+  background-color: rgba(27, 38, 59, 0.85);
+  border: 1px solid #415a77;
+  color: #e0e6ed;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.nc-zoom-btn:hover {
+  background-color: #283850;
+}
+
+/* Bottom Hint Bar */
+.nc-hint-bar {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background-color: #1b263b;
+  border-top: 1px solid #283850;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  text-align: center;
+  min-height: 20px;
+  box-sizing: border-box;
+}
+
+.nc-hint-bar.nc-hint-alert {
+  color: #ff5d73;
+  font-weight: 600;
+}
+
+/* Tooltip */
+.nc-drag-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background-color: rgba(13, 27, 42, 0.92);
+  border: 1px solid #415a77;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #e0e6ed;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translate(12px, 12px);
+}
+
+.nc-drag-tooltip.nc-invalid {
+  border-color: #ff5d73;
+  color: #ff5d73;
+}
+
+/* Modals */
+.nc-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(7, 14, 23, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.nc-card {
+  background-color: #1b263b;
+  border: 2px solid #415a77;
+  border-radius: 12px;
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nc-card-fail {
+  border-color: #ff5d73;
+}
+
+.nc-card-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.nc-card-title.nc-fail {
+  color: #ff5d73;
+}
+
+.nc-card-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.nc-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.nc-btn-primary {
+  background-color: #2ec4b6;
+  color: #0d1b2a;
+}
+
+.nc-btn-rewind {
+  background-color: #f59e0b;
+  color: #0d1b2a;
+}
+
+.nc-btn-secondary {
+  background-color: #283850;
+  color: #e0e6ed;
+  border: 1px solid #415a77;
+}
+
+.nc-btn-danger {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.nc-btn-danger:hover {
+  background-color: #dc2626;
+}
+
+/* Input and Form controls */
+.nc-input {
+  background-color: #0d1b2a;
+  border: 1px solid #415a77;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.nc-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}

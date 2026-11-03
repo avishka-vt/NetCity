@@ -1,0 +1,154 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createMockDOM } from './mock-dom.js';
+import { NetCityClientUI } from '../apps/client/src/ui.js';
+import { AssetManager, ASSET_PATHS } from '../apps/client/src/assets.js';
+
+test('AssetManager: Catalog paths cover all buildings, devices, servers, chapters, and UI', () => {
+  const assets = new AssetManager();
+  const keys = Object.keys(ASSET_PATHS);
+
+  assert.ok(keys.length >= 25, `Expected at least 25 registered assets, got ${keys.length}`);
+
+  // Confirm key categories
+  assert.ok(ASSET_PATHS['buildings/laptop'], 'buildings/laptop asset must be configured');
+  assert.ok(ASSET_PATHS['buildings/classroom'], 'buildings/classroom asset must be configured');
+  assert.ok(ASSET_PATHS['devices/web_server'], 'devices/web_server asset must be configured');
+  assert.ok(ASSET_PATHS['devices/dhcp_server'], 'devices/dhcp_server asset must be configured');
+  assert.ok(ASSET_PATHS['devices/dns_server'], 'devices/dns_server asset must be configured');
+  assert.ok(ASSET_PATHS['devices/switch'], 'devices/switch asset must be configured');
+  assert.ok(ASSET_PATHS['devices/router'], 'devices/router asset must be configured');
+  assert.ok(ASSET_PATHS['devices/firewall'], 'devices/firewall asset must be configured');
+  assert.ok(ASSET_PATHS['devices/load_balancer'], 'devices/load_balancer asset must be configured');
+  assert.ok(ASSET_PATHS['chapters/ch1'], 'chapters/ch1 asset must be configured');
+  assert.ok(ASSET_PATHS['ui/logo'], 'ui/logo asset must be configured');
+
+  // Verify that all asset files physically exist in apps/client/public/
+  for (const key of keys) {
+    const diskPath = path.resolve('apps/client/public', ASSET_PATHS[key]);
+    assert.ok(fs.existsSync(diskPath), `Asset file must exist on disk: ${diskPath}`);
+  }
+
+  for (let ch = 1; ch <= 7; ch++) {
+    assert.ok(assets.getChapterAssetPath(ch), `Chapter asset path must exist for Chapter ${ch}`);
+  }
+  assert.ok(assets.getLogoAssetPath(), `Logo asset path must exist`);
+});
+
+test('Campaign UI: Entry screen is fullscreen Campaign, Learn is dedicated page, no badges/profile, accurate progress', () => {
+  const mockDOM = createMockDOM();
+  const prevWindow = globalThis.window;
+  const prevDoc = globalThis.document;
+  const prevRaf = globalThis.requestAnimationFrame;
+  const prevCaf = globalThis.cancelAnimationFrame;
+
+  globalThis.window = mockDOM.window;
+  globalThis.document = mockDOM.document;
+  globalThis.requestAnimationFrame = mockDOM.window.requestAnimationFrame;
+  globalThis.cancelAnimationFrame = mockDOM.window.cancelAnimationFrame;
+
+  try {
+    const container = mockDOM.document.createElement('div');
+    mockDOM.document.body.appendChild(container);
+
+    // Instantiating without initialLevel launches fullscreen on Campaign Screen
+    const ui = new NetCityClientUI(container, { initialLevel: null, testMode: false });
+
+    // 1. Entry screen is fullscreen Campaign Dashboard
+    assert.equal(ui.currentScreen, 'campaign', 'Entry screen must be campaign');
+    assert.equal(ui.screenCampaignEl.style.display, 'flex', 'Campaign screen must be displayed');
+    assert.equal(ui.screenGameEl.style.display, 'none', 'Game screen must be hidden');
+    assert.equal(ui.screenLearnEl.style.display, 'none', 'Learn screen must be hidden');
+    assert.equal(ui._campaignView, 'chapters', 'Initial campaign view must be chapters');
+
+    // 2. Topbar clean: Brand + Play & Learn tabs only; no badges, no progress, no profile
+    const campaignHtml = ui.screenCampaignEl.innerHTML;
+    assert.ok(campaignHtml.includes('NetCity'), 'Topbar must have NetCity brand');
+    assert.ok(campaignHtml.includes('id="nc-tab-play"'), 'Must have Play tab');
+    assert.ok(campaignHtml.includes('id="nc-tab-learn"'), 'Must have Learn tab');
+    assert.ok(!campaignHtml.includes('Alex'), 'Profile Alex must be removed');
+    assert.ok(!campaignHtml.includes('id="nc-nav-badges"'), 'Badges link must be removed');
+    assert.ok(!campaignHtml.includes('id="nc-nav-progress"'), 'Progress link must be removed');
+
+    // 3. User requirements: No badges, no profile, no coins, no day streak
+    assert.ok(!campaignHtml.includes('Coins'), 'Coins widget must be removed');
+    assert.ok(!campaignHtml.includes('Day streak'), 'Day streak widget must be removed');
+    assert.ok(campaignHtml.includes('nc-chapters-carousel'), 'Chapters must be organized in a carousel container');
+
+    const chapterCards = ui.screenCampaignEl.querySelectorAll('.nc-chapter-card');
+    assert.equal(chapterCards.length, 7, 'Must display all 7 chapter cards on Page 1');
+    assert.ok(campaignHtml.includes('0/9'), 'Active chapter shows 0/9 progress count');
+    assert.ok(campaignHtml.includes('Continue'), 'Active chapter shows Continue button');
+
+    // 4. Clicking Chapter 1 transitions to Level Selection for Chapter 1
+    const ch1Card = chapterCards[0];
+    ch1Card.onclick({ stopPropagation: () => {}, target: ch1Card, closest: () => ch1Card });
+
+    assert.equal(ui._campaignView, 'chapter_levels', 'Must transition to chapter_levels view');
+    assert.equal(ui._currentViewingCh, 1, 'Must be viewing Chapter 1');
+    assert.ok(ui.screenCampaignEl.innerHTML.includes('The Basics'), 'Must show Chapter 1 title');
+
+    const levelCards = ui.screenCampaignEl.querySelectorAll('.nc-level-card');
+    assert.equal(levelCards.length, 9, 'Chapter 1 must list all 9 levels');
+    assert.ok(ui.screenCampaignEl.innerHTML.includes('LEVEL 1.1'), 'Must display Level 1.1');
+    assert.ok(ui.screenCampaignEl.innerHTML.includes('LEVEL 1.9'), 'Must display Level 1.9');
+
+    // 5. Clicking "← All Chapters" transitions back to All Chapters Grid
+    const backBtn = ui.screenCampaignEl.querySelector('#nc-btn-back-chapters');
+    assert.ok(backBtn, 'Must have Back to Chapters button');
+    backBtn.onclick();
+
+    assert.equal(ui._campaignView, 'chapters', 'Must return to chapters grid');
+    assert.equal(ui.screenCampaignEl.querySelectorAll('.nc-chapter-card').length, 7, 'Must show 7 chapter cards again');
+
+    // 6. Clicking Learn in topbar switches to dedicated full-page Learn Screen
+    const tabLearn = ui.screenCampaignEl.querySelector('#nc-tab-learn');
+    assert.ok(tabLearn, 'Must have Learn tab button');
+    tabLearn.onclick();
+
+    assert.equal(ui.currentScreen, 'learn', 'Must switch to learn screen');
+    assert.equal(ui.screenLearnEl.style.display, 'flex', 'Learn screen must be displayed');
+    assert.equal(ui.screenCampaignEl.style.display, 'none', 'Campaign screen must be hidden');
+    assert.ok(ui.screenLearnEl.innerHTML.includes('MAC vs IP Addresses'), 'Must show Field Manual content');
+    assert.ok(ui.screenLearnEl.querySelectorAll('.nc-learn-nav-btn').length >= 6, 'Must list all topic buttons in sidebar');
+
+    // 7. Clicking "← Back to Play" switches back to Campaign
+    const backPlayBtn = ui.screenLearnEl.querySelector('#nc-learn-back-play');
+    assert.ok(backPlayBtn, 'Must have Back to Play button');
+    backPlayBtn.onclick();
+
+    assert.equal(ui.currentScreen, 'campaign', 'Must return to campaign screen');
+    assert.equal(ui.screenCampaignEl.style.display, 'flex');
+
+    // 8. Open Chapter 2 and click Play on a level -> switches to Gameplay
+    ui._campaignView = 'chapter_levels';
+    ui._currentViewingCh = 2;
+    ui._renderCampaignScreen();
+
+    const lvl21PlayBtn = ui.screenCampaignEl.querySelector('.nc-level-play-btn');
+    assert.ok(lvl21PlayBtn, 'Must have level Play button');
+    lvl21PlayBtn.onclick({ stopPropagation: () => {}, getAttribute: () => '2.1' });
+
+    assert.equal(ui.currentScreen, 'game', 'Must switch to game screen');
+    assert.equal(ui.screenGameEl.style.display, 'flex');
+    assert.equal(ui.screenCampaignEl.style.display, 'none');
+    assert.equal(ui.currentLevelId, '2.1', 'Loads chosen level 2.1');
+
+    // 9. In Gameplay: clicking topbar back button (←) returns to Campaign
+    const topBarBack = container.querySelector('#nc-btn-levels');
+    assert.ok(topBarBack, 'Top bar back button must exist in game');
+    topBarBack.dispatchEvent({ type: 'click' });
+
+    assert.equal(ui.currentScreen, 'campaign', 'Must return to campaign screen on back button');
+    assert.equal(ui.screenCampaignEl.style.display, 'flex');
+
+    ui.destroy();
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDoc;
+    globalThis.requestAnimationFrame = prevRaf;
+    globalThis.cancelAnimationFrame = prevCaf;
+  }
+});

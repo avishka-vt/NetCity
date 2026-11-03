@@ -1,0 +1,1603 @@
+/* NetCity v2.0 Stylesheet — Mini Motorways Layout + Clean Dark Aesthetic (Zero Glare) */
+
+:root {
+  --nc-bg: #070d18;
+  --nc-surface: #0e172a;
+  --nc-surface-card: #0f172a;
+  --nc-surface-glass: rgba(14, 23, 42, 0.92);
+  --nc-surface-dock: rgba(13, 21, 39, 0.94);
+  --nc-border: rgba(255, 255, 255, 0.08);
+  --nc-border-hover: rgba(56, 189, 248, 0.4);
+  --nc-primary: #0284c7;
+  --nc-primary-hover: #0369a1;
+  --nc-cyan: #38bdf8;
+  --nc-green: #10b981;
+  --nc-gold: #f59e0b;
+  --nc-purple: #8b5cf6;
+  --nc-red: #ef4444;
+  --nc-text-white: #ffffff;
+  --nc-text-muted: #94a3b8;
+  --nc-text-dark: #64748b;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.nc-fullwindow-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background-color: var(--nc-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  color: #e0e6ed;
+}
+
+.nc-game-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: var(--nc-bg);
+  overflow: hidden;
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOP HUD BAR (Minimalist, Clean Matte Dark Mode)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--nc-surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--nc-border);
+  gap: 14px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  z-index: 50;
+  min-height: 56px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.nc-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Back button (Mini Motorways style arrow) */
+.nc-btn-back {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid var(--nc-border);
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.nc-btn-back:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--nc-cyan);
+  transform: translateX(-1px);
+}
+
+/* NetCity Brand Logo */
+.nc-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nc-brand-icon {
+  font-size: 1.2rem;
+  color: var(--nc-cyan);
+}
+
+.nc-brand-text {
+  color: #ffffff;
+}
+
+.nc-topbar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nc-topbar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.nc-topbar-goal {
+  font-size: 0.8rem;
+  color: var(--nc-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.nc-topbar-goal .nc-goal-tag {
+  color: var(--nc-cyan);
+  font-weight: 600;
+}
+
+.nc-topbar-goal .nc-goal-note {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+/* Center HUD Pills */
+.nc-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.nc-hud-pill {
+  background: rgba(22, 34, 60, 0.7);
+  border: 1px solid var(--nc-border);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.nc-pin-badge {
+  color: #ef4444;
+  font-size: 0.95rem;
+}
+
+.nc-coin-icon {
+  font-size: 0.95rem;
+}
+
+.nc-coins-label {
+  color: var(--nc-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.nc-coins-value {
+  color: #facc15;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 0.92rem;
+}
+
+.nc-hud-deliveries .nc-pill-val {
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+.nc-hud-stars .nc-pill-val {
+  color: #f59e0b;
+}
+
+/* Action button pills */
+.nc-action-btn {
+  background: rgba(22, 34, 60, 0.8);
+  color: #e0e6ed;
+  border: 1px solid var(--nc-border);
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 36px;
+  text-align: center;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.nc-action-btn:hover {
+  background: rgba(37, 99, 235, 0.25);
+  border-color: var(--nc-cyan);
+  color: #ffffff;
+}
+
+.nc-action-btn.nc-btn-pause {
+  background: rgba(30, 58, 138, 0.6);
+  border-color: #3b82f6;
+  color: #93c5fd;
+  min-width: 44px;
+}
+
+.nc-action-btn.nc-btn-speed {
+  font-family: monospace;
+  font-weight: 700;
+  color: #38bdf8;
+  min-width: 38px;
+}
+
+.nc-action-btn.nc-btn-speed.nc-speed-active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--nc-cyan);
+  color: #ffffff;
+}
+
+.nc-action-btn.nc-btn-tutorial {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.nc-action-btn.nc-btn-tutorial:hover {
+  background: rgba(16, 185, 129, 0.3);
+  color: #ffffff;
+}
+
+.nc-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CANVAS AREA & CONTROLS (Mini Motorways Clean Viewport)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-canvas-wrapper {
+  flex: 1 1 0%;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  background-color: var(--nc-bg);
+}
+
+.nc-canvas {
+  display: block;
+  cursor: crosshair;
+  background-color: #070e17;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: 100%;
+  height: 100%;
+}
+
+.nc-zoom-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 30;
+}
+
+.nc-zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--nc-border);
+  color: #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
+}
+
+.nc-zoom-btn:hover {
+  background: rgba(37, 99, 235, 0.3);
+  border-color: var(--nc-cyan);
+  color: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FLOATING BOTTOM DOCK (Mini Motorways Inspired Centerpiece)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-bottom-dock {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 96vw;
+  pointer-events: auto;
+}
+
+/* Floating Hint / Prompt Pill */
+.nc-hint-pill {
+  background: rgba(14, 23, 42, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--nc-border);
+  border-radius: 9999px;
+  padding: 6px 18px;
+  font-size: 0.84rem;
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  max-width: 90vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+
+.nc-hint-pill.nc-hint-alert {
+  border-color: var(--nc-red);
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.nc-hint-icon {
+  font-size: 0.95rem;
+  color: var(--nc-cyan);
+}
+
+/* Main Dock Card */
+.nc-dock-card {
+  background: var(--nc-surface-dock);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 8px 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Segmented Category Switcher (Cables vs Devices) */
+.nc-dock-category-switch {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  padding: 3px;
+  display: flex;
+  gap: 4px;
+}
+
+.nc-dock-cat-btn {
+  background: transparent;
+  color: var(--nc-text-muted);
+  border: none;
+  padding: 5px 16px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.nc-dock-cat-btn:hover {
+  color: #ffffff;
+}
+
+.nc-dock-cat-btn.nc-dock-cat-active {
+  background: var(--nc-primary);
+  color: #ffffff;
+}
+
+/* Dock Tool Items Row */
+.nc-dock-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding: 2px;
+}
+
+.nc-dock-tools::-webkit-scrollbar {
+  display: none;
+}
+
+.nc-dock-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Individual Tool Card Button */
+.nc-tool-btn {
+  background: rgba(22, 34, 60, 0.7);
+  border: 1px solid var(--nc-border);
+  color: #cbd5e1;
+  padding: 7px 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.nc-tool-btn:hover {
+  background: rgba(30, 48, 88, 0.8);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.nc-tool-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nc-cost-badge {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: #94a3b8;
+}
+
+/* Active Crisp States for Wires (Zero harsh glow) */
+.nc-tool-btn.nc-active-twisted_pair {
+  border-color: #e8903a !important;
+  background: rgba(232, 144, 58, 0.18) !important;
+  color: #ffaa5a;
+  outline: 2px solid #e8903a;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-coaxial {
+  border-color: #b08968 !important;
+  background: rgba(176, 137, 104, 0.18) !important;
+  color: #ddb892;
+  outline: 2px solid #b08968;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-multimode_fiber {
+  border-color: #4cc9f0 !important;
+  background: rgba(76, 201, 240, 0.18) !important;
+  color: #64d8f8;
+  outline: 2px solid #4cc9f0;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-single_mode_fiber {
+  border-color: #9d8cff !important;
+  background: rgba(157, 140, 255, 0.18) !important;
+  color: #c4bbf0;
+  outline: 2px solid #9d8cff;
+  outline-offset: -1px;
+}
+
+/* Active Crisp States for Devices */
+.nc-tool-btn.nc-active-access_point {
+  border-color: #06d6a0 !important;
+  background: rgba(6, 214, 160, 0.18) !important;
+  color: #06d6a0;
+  outline: 2px solid #06d6a0;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-cabinet {
+  border-color: #94a3b8 !important;
+  background: rgba(148, 163, 184, 0.18) !important;
+  color: #f1f5f9;
+  outline: 2px solid #94a3b8;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-hub {
+  border-color: #a78bfa !important;
+  background: rgba(167, 139, 250, 0.18) !important;
+  color: #c4b5fd;
+  outline: 2px solid #a78bfa;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-switch {
+  border-color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #7dd3fc;
+  outline: 2px solid #38bdf8;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-router {
+  border-color: #e63946 !important;
+  background: rgba(230, 57, 70, 0.18) !important;
+  color: #ff6b6b;
+  outline: 2px solid #e63946;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-firewall {
+  border-color: #f43f5e !important;
+  background: rgba(244, 63, 94, 0.18) !important;
+  color: #fda4af;
+  outline: 2px solid #f43f5e;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-vpn_gateway {
+  border-color: #0ea5e9 !important;
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #7dd3fc;
+  outline: 2px solid #0ea5e9;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-load_balancer {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #6ee7b7;
+  outline: 2px solid #10b981;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-backup_power {
+  border-color: #eab308 !important;
+  background: rgba(234, 179, 8, 0.18) !important;
+  color: #fde047;
+  outline: 2px solid #eab308;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-dhcp_server {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399;
+  outline: 2px solid #10b981;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-dns_server {
+  border-color: #8b5cf6 !important;
+  background: rgba(139, 92, 246, 0.18) !important;
+  color: #a78bfa;
+  outline: 2px solid #8b5cf6;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-web_server {
+  border-color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.18) !important;
+  color: #38bdf8;
+  outline: 2px solid #0284c7;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-email_server {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24;
+  outline: 2px solid #f59e0b;
+  outline-offset: -1px;
+}
+
+.nc-tool-btn.nc-active-pickup {
+  border-color: #ffd166 !important;
+  background: rgba(255, 209, 102, 0.18) !important;
+  color: #ffd166;
+  outline: 2px solid #ffd166;
+  outline-offset: -1px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODALS, INSPECTORS & LEVEL WON CARDS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(7, 13, 24, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.nc-card {
+  background: var(--nc-surface-card);
+  border: 1px solid var(--nc-border);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: ncPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ncPopIn {
+  0% { transform: scale(0.96); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.nc-card-fail {
+  border-color: var(--nc-red);
+}
+
+.nc-card-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.nc-card-title.nc-fail {
+  color: #f87171;
+}
+
+/* Reward Pills on Level Complete */
+.nc-reward-pills {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+
+.nc-reward-badge {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--nc-border);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "What You Learned" Checklist card */
+.nc-takeaways-card {
+  background: rgba(14, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.nc-takeaways-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--nc-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.nc-takeaway-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.nc-card-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.nc-btn {
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nc-btn-primary {
+  background: var(--nc-primary);
+  color: #ffffff;
+}
+
+.nc-btn-primary:hover {
+  background: #0369a1;
+  transform: translateY(-1px);
+}
+
+.nc-btn-rewind {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.nc-btn-rewind:hover {
+  background: #b45309;
+}
+
+.nc-btn-secondary {
+  background: rgba(30, 41, 59, 0.8);
+  color: #e2e8f0;
+  border: 1px solid var(--nc-border);
+}
+
+.nc-btn-secondary:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--nc-cyan);
+  color: #ffffff;
+}
+
+.nc-btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.nc-btn-danger:hover {
+  background: #dc2626;
+}
+
+/* Drag Tooltip */
+.nc-drag-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(11, 19, 43, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--nc-border);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transform: translate(14px, 14px);
+}
+
+.nc-drag-tooltip.nc-invalid {
+  border-color: var(--nc-red);
+  color: #fca5a5;
+}
+
+/* Inputs & Form controls */
+.nc-input {
+  background-color: rgba(11, 19, 43, 0.9);
+  border: 1px solid var(--nc-border);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.nc-input:focus {
+  border-color: var(--nc-cyan);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FULLSCREEN MULTI-SCREEN ARCHITECTURE (Campaign, Learn, Gameplay)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-game-root {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background-color: #070e17;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.nc-screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #070e17;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   UNIFIED APP NAVIGATION BAR (Campaign & Learn Screens)
+   Clean modern header: Brand + Play & Learn tabs (no badges, progress, profile)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #081024;
+  height: 72px;
+  min-height: 72px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.nc-app-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.nc-app-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.nc-app-brand-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 24px;
+}
+
+.nc-app-brand-bars .nc-bar {
+  width: 5px;
+  border-radius: 9999px;
+}
+
+.nc-app-brand-bars .bar-1 {
+  height: 14px;
+  background: #00e5ff;
+}
+
+.nc-app-brand-bars .bar-2 {
+  height: 24px;
+  background: #ff2a85;
+}
+
+.nc-app-brand-bars .bar-3 {
+  height: 18px;
+  background: #ffb703;
+}
+
+.nc-app-brand-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.nc-app-nav-tabs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: 16px;
+}
+
+.nc-app-nav-tab,
+.nc-nav-tab {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 22px;
+  border-radius: 9999px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nc-app-nav-tab:hover,
+.nc-nav-tab:hover {
+  color: #ffffff;
+}
+
+.nc-app-nav-tab.active,
+.nc-nav-tab.active {
+  background: #0084ff;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 132, 255, 0.45);
+}
+
+.nc-play-icon {
+  font-size: 0.8rem;
+  display: inline-block;
+}
+
+.nc-app-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CAMPAIGN SCREEN
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-screen-campaign {
+  background: radial-gradient(circle at 50% 0%, #0d1b3e 0%, #060b18 100%);
+  color: #e2e8f0;
+}
+
+.nc-campaign-scrollable,
+.nc-campaign-main-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 40px 56px 64px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.nc-campaign-content-inner,
+.nc-campaign-container {
+  max-width: 1540px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Campaign Subheader Row — Clean without coins or day streak */
+.nc-campaign-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+.nc-campaign-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nc-campaign-heading {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nc-sparkle {
+  color: #ffd166;
+  font-size: 1.6rem;
+}
+
+.nc-campaign-subheading {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Chapters Carousel: Horizontally scrollable on laptop/desktop, vertical on mobile */
+.nc-chapters-carousel-container {
+  width: 100%;
+  position: relative;
+  overflow: visible;
+}
+
+.nc-chapters-carousel {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 16px 4px 32px 4px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.3) rgba(255, 255, 255, 0.04);
+}
+
+.nc-chapters-carousel::-webkit-scrollbar {
+  height: 8px;
+}
+
+.nc-chapters-carousel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 9999px;
+}
+
+.nc-chapters-carousel::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.35);
+  border-radius: 9999px;
+}
+
+.nc-chapters-carousel::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.65);
+}
+
+/* Chapter Card — Sleek Navy with 3D Centerpiece */
+.nc-chapter-card {
+  flex: 0 0 195px;
+  width: 195px;
+  min-width: 195px;
+  min-height: 295px;
+  background: #0c1733;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px 14px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.nc-chapter-card:hover {
+  transform: translateY(-5px);
+  background: #0f1c3f;
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+}
+
+/* Active card highlight (Chapter 4 in mockup) */
+.nc-chapter-card.nc-chapter-active {
+  border: 2.5px solid #0084ff;
+  background: #0e1e44;
+  box-shadow: 0 0 28px rgba(0, 132, 255, 0.35), inset 0 0 18px rgba(0, 132, 255, 0.12);
+}
+
+.nc-chapter-card.nc-chapter-locked {
+  opacity: 0.65;
+  background: #091228;
+}
+
+/* Card Top: Number & Name */
+.nc-chapter-card-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.nc-chapter-num {
+  font-size: 0.76rem;
+  color: #7e8ea6;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.nc-chapter-name {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+  margin: 0;
+}
+
+/* Card Center: Floating 3D Graphic (NO circle well) */
+.nc-chapter-asset-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.nc-chapter-3d-img {
+  width: 108px;
+  height: 108px;
+  max-width: 112px;
+  max-height: 112px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nc-chapter-card:hover .nc-chapter-3d-img {
+  transform: scale(1.08);
+}
+
+/* Card Bottom States */
+.nc-chapter-card-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+}
+
+/* Completed State Pill (e.g. Chapters 1-3 in mockup) */
+.nc-chapter-pill-completed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 130px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  color: #10b981;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.nc-check-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #10b981;
+  color: #06101e;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+/* Active State: Progress count + Continue button */
+.nc-chapter-progress-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+}
+
+.nc-chapter-progress-pill .nc-chevron {
+  color: #38bdf8;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.nc-btn-continue {
+  width: 100%;
+  height: 42px;
+  background: #0084ff;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(0, 132, 255, 0.4);
+}
+
+.nc-btn-continue:hover {
+  background: #0095ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 132, 255, 0.55);
+}
+
+/* Locked State Pill */
+.nc-chapter-pill-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Mobile responsive view: vertical scrolling */
+@media (max-width: 768px) {
+  .nc-chapters-carousel {
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: visible;
+    gap: 14px;
+    padding: 8px 0 24px 0;
+  }
+
+  .nc-chapter-card {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    min-height: auto;
+    padding: 16px 20px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .nc-chapter-card-top {
+    align-items: flex-start;
+    width: auto;
+  }
+
+  .nc-chapter-asset-stage {
+    height: 70px;
+    width: 70px;
+    margin: 0;
+  }
+
+  .nc-chapter-3d-img {
+    max-width: 60px;
+    max-height: 60px;
+  }
+
+  .nc-chapter-card-bottom {
+    width: auto;
+    margin-top: 0;
+  }
+}
+
+/* Chapter Level Selection View Header */
+.nc-chapter-levels-header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nc-btn-back-chapters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  border-radius: 9999px;
+  padding: 6px 16px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.15s ease;
+}
+
+.nc-btn-back-chapters:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.nc-chapter-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nc-chapter-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+}
+
+.nc-chapter-banner-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.nc-chapter-banner-desc {
+  font-size: 0.92rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.nc-levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.nc-level-card {
+  background: #0c162e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.nc-level-card:hover {
+  background: #111f42;
+  border-color: #0284c7;
+  transform: translateY(-2px);
+}
+
+.nc-level-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  padding-right: 12px;
+}
+
+.nc-level-id-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+.nc-level-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nc-level-moment {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nc-level-play-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nc-level-play-btn:hover {
+  background: #0369a1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FULLSCREEN LEARN PAGE
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nc-screen-learn {
+  background: #070e17;
+  color: #e2e8f0;
+}
+
+.nc-learn-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+}
+
+.nc-learn-sidebar {
+  width: 290px;
+  min-width: 260px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: #091224;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  gap: 6px;
+  overflow-y: auto;
+  user-select: none;
+}
+
+.nc-learn-sidebar-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin: 4px 10px 10px 10px;
+}
+
+.nc-learn-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.nc-learn-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.nc-learn-nav-btn.active {
+  background: #0e2246;
+  border-color: #0284c7;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.nc-learn-article-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: 36px 48px;
+  line-height: 1.6;
+  max-width: 960px;
+}
+
+.nc-learn-article-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.nc-learn-article-subtitle {
+  font-size: 0.95rem;
+  color: #38bdf8;
+  margin: 0 0 24px 0;
+  font-weight: 600;
+}
+
+.nc-learn-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.nc-learn-card {
+  background: #0c162e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.nc-learn-card h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.98rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nc-learn-card p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.nc-learn-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.86rem;
+}
+
+.nc-learn-table th,
+.nc-learn-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nc-learn-table th {
+  background: #0c162e;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.nc-learn-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.nc-learn-callout {
+  background: rgba(2, 132, 199, 0.1);
+  border-left: 4px solid #0284c7;
+  border-radius: 0 10px 10px 0;
+  padding: 14px 18px;
+  margin: 18px 0;
+  font-size: 0.88rem;
+  color: #bae6fd;
+}
+

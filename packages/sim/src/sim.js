@@ -28,11 +28,13 @@ export class NetCitySimulation {
       }));
       this.server = this.servers[0].square;
     } else {
+      const defaultServerSq = Math.floor(this.height / 2) * this.width + Math.floor(this.width / 2);
+      const serverSq = mapData.server !== undefined ? mapData.server : defaultServerSq;
       this.servers = [{
         id: 'server_1',
         type: 'server',
         name: 'Server',
-        square: mapData.server,
+        square: serverSq,
         color: '#2ec4b6',
         icon: '🖥️',
         mac: '00:FE',
@@ -43,11 +45,11 @@ export class NetCitySimulation {
         zone: null,
         isPublic: false
       }];
-      this.server = mapData.server;
+      this.server = serverSq;
     }
     this.serverSquares = new Set(this.servers.map(s => s.square));
 
-    this.walls = new Set(mapData.walls || []);
+    this.walls = new Set(Array.isArray(mapData.walls) ? mapData.walls : []);
     this.noisySquares = new Set(mapData.noisySquares || []);
     this.snoopSquares = new Set(mapData.snoopSquares || []);
     this.crashedServers = new Set();
@@ -83,6 +85,14 @@ export class NetCitySimulation {
       return this._netRngBase();
     };
 
+    // Endless Mode Setup (Section 6.1 & 9.7)
+    this.isEndless = Boolean(mapData.isEndless);
+    this.spawnRng = createStreamRng(mapData.seed || 'endless-seed', 'spawn');
+    this.eventRng = createStreamRng(mapData.seed || 'endless-seed', 'events');
+    this.servedBuildingIds = new Set();
+    this.nextEndlessSpawnTick = 400;
+    this.nextEndlessEventTick = 1200;
+
     this.buildings = [];
     this.devices = new Map();           // deviceId -> Device
     this.wires = new Map();             // wireId -> WireLink
@@ -100,7 +110,126 @@ export class NetCitySimulation {
     this.saveCheckpoint();
   }
 
+  findEndlessSquare(range = [3, 14]) {
+    const w = this.width;
+    const h = this.height;
+    const sx = this.server % w;
+    const sy = Math.floor(this.server / w);
+    const minD = range[0] || 3;
+    const maxD = range[1] || 14;
+
+    const used = new Set([
+      this.server,
+      ...this.walls,
+      ...Array.from(this.devices.values()).map(d => d.square),
+      ...this.buildings.map(b => b.square)
+    ]);
+    if (this.wires) {
+      for (const wire of this.wires.values()) {
+        for (const sq of wire.path) used.add(sq);
+      }
+    }
+
+    for (let r = 0; r < 300; r++) {
+      const x = Math.floor(this.spawnRng() * w);
+      const y = Math.floor(this.spawnRng() * h);
+      const sq = y * w + x;
+      if (used.has(sq)) continue;
+
+      let minDist = Math.abs(x - sx) + Math.abs(y - sy);
+      for (const d of this.devices.values()) {
+        const dx = d.square % w;
+        const dy = Math.floor(d.square / w);
+        const dist = Math.abs(x - dx) + Math.abs(y - dy);
+        if (dist < minDist) minDist = dist;
+      }
+
+      let spacingOk = true;
+      for (const b of this.buildings) {
+        const bx = b.square % w;
+        const by = Math.floor(b.square / w);
+        if (Math.abs(x - bx) < 2 && Math.abs(y - by) < 2) {
+          spacingOk = false;
+          break;
+        }
+      }
+
+      if (spacingOk && minDist >= minD && minDist <= maxD) {
+        return sq;
+      }
+    }
+
+    // Fallback safe square search
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const sq = y * w + x;
+        if (!used.has(sq)) return sq;
+      }
+    }
+    return null;
+  }
+
   initBuildings() {
+    if (this.isEndless && (!this.mapData.buildings || this.mapData.buildings.length === 0)) {
+      // 3 initial buildings for Endless mode (Section 6.1)
+      const startTypes = ['laptop', 'laptop', 'classroom'];
+      this.buildings = [];
+
+      for (let i = 0; i < startTypes.length; i++) {
+        const bType = startTypes[i];
+        const sq = this.findEndlessSquare([3, 8]);
+        if (sq !== null) {
+          const quota = bType === 'classroom' ? 3 : 2;
+          const firstTimer = this.mapData.firstTimerTicks || 800;
+          const cycleTimer = this.mapData.cycleTimerTicks || 240;
+          const deadline = this.mapData.deadlineTicks || 40;
+          const reqInterval = bType === 'classroom' ? 40 : 60;
+          const srv = (this.servers && this.servers.length > 0) ? this.servers[0] : null;
+          const destSquare = srv ? srv.square : this.server;
+          const targetMac = srv ? srv.mac : '00:FE';
+          const targetType = srv ? srv.type : 'server';
+          const targetName = srv ? srv.name : 'Server';
+          const targetColor = srv ? srv.color : '#2ec4b6';
+          const targetServerId = srv ? srv.id : 'server_1';
+
+          this.buildings.push({
+            id: i + 1,
+            name: `${bType.charAt(0).toUpperCase() + bType.slice(1)} #${i + 1}`,
+            type: bType,
+            square: sq,
+            state: 'open',
+            opensAtTick: 0,
+            required: true,
+            quota,
+            fulfilledInCycle: 0,
+            firstTimerTicks: firstTimer,
+            cycleTimerTicks: cycleTimer,
+            timerTicksLeft: firstTimer,
+            timerPhase: 'first',
+            deadlineTicks: deadline,
+            requestIntervalTicks: reqInterval,
+            nextRequestTick: Math.floor(this._netRng() * 20),
+            happiness: 100,
+            mac: `00:${(i + 11).toString(16).toUpperCase()}`,
+            ip: `192.168.1.${10 + i + 1}`,
+            subnet: '192.168.1.0/24',
+            defaultGateway: '192.168.1.1',
+            destinationSquare: destSquare,
+            targetServerId,
+            targetType,
+            targetMac,
+            targetName,
+            targetColor,
+            deliveredTotal: 0,
+            hasMetFirstQuota: false,
+            wireId: null,
+            warning: false
+          });
+        }
+      }
+      return;
+    }
+
     const rawBuildings = [...(this.mapData.buildings || [])];
     if (Array.isArray(this.mapData.spawns)) {
       for (const s of this.mapData.spawns) {
@@ -225,12 +354,25 @@ export class NetCitySimulation {
     }
   }
 
-  setBuildingIp(id, ip, gateway = undefined) {
+  setBuildingIp(id, ip, gateway = undefined, zone = undefined) {
     const b = this.getBuilding(id);
     if (!b) return false;
     b.ip = ip;
     if (gateway !== undefined) b.defaultGateway = gateway;
+    if (zone !== undefined) {
+      b.zone = zone || null;
+      b.colorGroup = zone || null;
+    }
     b.warning = false;
+    return true;
+  }
+
+  setBuildingZone(id, zone) {
+    const b = this.getBuilding(id);
+    if (!b) return false;
+    b.zone = zone || null;
+    b.colorGroup = zone || null;
+    this.events.push({ type: 'BuildingZoneSet', tick: this.tickNumber, buildingId: id, zone: b.zone });
     return true;
   }
 
@@ -379,6 +521,8 @@ export class NetCitySimulation {
       payload: { type, square }
     });
 
+    this.saveCheckpoint();
+
     return { success: true, device, deviceId: device.id };
   }
 
@@ -407,6 +551,8 @@ export class NetCitySimulation {
       command: 'removeDevice',
       payload: { deviceId }
     });
+
+    this.saveCheckpoint();
 
     return { success: true, refund: device.cost };
   }
@@ -660,6 +806,8 @@ export class NetCitySimulation {
       payload: { sourceId, sourceType, wireType, path: [...path] }
     });
 
+    this.saveCheckpoint();
+
     return { success: true, wire: link };
   }
 
@@ -689,6 +837,7 @@ export class NetCitySimulation {
     }
 
     this.wires.delete(wire.id);
+    this.saveCheckpoint();
     return { success: true, refund: wire.cost };
   }
 
@@ -728,6 +877,17 @@ export class NetCitySimulation {
     if (!dev.portZones) dev.portZones = new Map();
     if (zoneColor) dev.portZones.set(portWireId, zoneColor);
     else dev.portZones.delete(portWireId);
+
+    // If the wire connects directly to a building, also update the building's zone
+    const wire = this.wires.get(portWireId);
+    if (wire && wire.buildingId) {
+      const b = this.getBuilding(wire.buildingId);
+      if (b) {
+        b.zone = zoneColor || null;
+        b.colorGroup = zoneColor || null;
+      }
+    }
+
     this.events.push({ type: 'PortZoneSet', tick: this.tickNumber, deviceId, portWireId, zone: zoneColor });
     return true;
   }
@@ -905,21 +1065,30 @@ export class NetCitySimulation {
       netRngCallCount: this._netRngCallCount,
       buildings: JSON.parse(JSON.stringify(this.buildings)),
       devices: Array.from(this.devices.values()).map(d => ({
-        id: d.id,
-        type: d.type,
-        square: d.square,
-        cost: d.cost,
-        ports: d.ports,
-        uplinkWireId: d.uplinkWireId || null,
-        wireIds: Array.from(d.wireIds || [])
+        ...d,
+        wireIds: Array.from(d.wireIds || []),
+        outgoingWireIds: Array.from(d.outgoingWireIds || []),
+        blockedPorts: Array.from(d.blockedPorts || []),
+        macTable: d.macTable ? Array.from(d.macTable.entries()) : [],
+        portZones: d.portZones ? Array.from(d.portZones.entries()) : [],
+        staticRoutes: d.staticRoutes ? Array.from(d.staticRoutes.entries()) : [],
+        dynamicRoutes: d.dynamicRoutes ? Array.from(d.dynamicRoutes.entries()) : [],
+        natTable: d.natTable ? Array.from(d.natTable.entries()) : [],
+        rules: d.rules ? JSON.parse(JSON.stringify(d.rules)) : [],
+        allowRules: d.allowRules ? JSON.parse(JSON.stringify(d.allowRules)) : []
       })),
-      wires: Array.from(this.wires.values()).map(w => ({ ...w })),
+      wires: Array.from(this.wires.values()).map(w => ({ ...w, path: [...w.path] })),
       commandLogLength: this.commandLog.length
     });
+
+    if (this.checkpoints.length > 250) {
+      this.checkpoints = [this.checkpoints[0], ...this.checkpoints.slice(-200)];
+    }
   }
 
-  rewind() {
-    const targetTick = Math.max(0, this.tickNumber - 600);
+  rewind(seconds = 10) {
+    const rewindTicks = Math.round((seconds || 10) * 20); // 20 ticks = 1 second
+    const targetTick = Math.max(0, this.tickNumber - rewindTicks);
     let chosen = null;
 
     for (let i = this.checkpoints.length - 1; i >= 0; i--) {
@@ -934,39 +1103,71 @@ export class NetCitySimulation {
     if (!chosen) return false;
 
     this.tickNumber = chosen.tick;
-    this.coins = chosen.coins;
-    this.spent = chosen.spent;
     this.status = 'playing';
     this.rewindsUsed++;
 
     // Restore deterministic PRNG to checkpoint state (Bug O fix):
-    // Re-create the base RNG and fast-forward to the saved call count.
     this._netRngBase = createStreamRng(this.mapData.seed, 'net');
     for (let i = 0; i < chosen.netRngCallCount; i++) this._netRngBase();
     this._netRngCallCount = chosen.netRngCallCount;
 
-    this.buildings = JSON.parse(JSON.stringify(chosen.buildings));
-    this.devices.clear();
-    for (const d of (chosen.devices || [])) {
-      this.devices.set(d.id, {
-        id: d.id,
-        type: d.type,
-        square: d.square,
-        cost: d.cost,
-        ports: d.ports,
-        uplinkWireId: d.uplinkWireId,
-        wireIds: new Set(d.wireIds),
-        macTable: new Map()
-      });
+    // Preserve devices and wires so that player's placed infrastructure is NOT wiped clean
+    if (this.devices.size === 0 && chosen.devices && chosen.devices.length > 0) {
+      for (const d of chosen.devices) {
+        this.devices.set(d.id, {
+          ...d,
+          wireIds: new Set(d.wireIds || []),
+          outgoingWireIds: new Set(d.outgoingWireIds || []),
+          blockedPorts: new Set(d.blockedPorts || []),
+          macTable: new Map(d.macTable || []),
+          portZones: d.portZones ? new Map(d.portZones) : null,
+          staticRoutes: d.staticRoutes ? new Map(d.staticRoutes) : null,
+          dynamicRoutes: d.dynamicRoutes ? new Map(d.dynamicRoutes) : null,
+          natTable: d.natTable ? new Map(d.natTable) : null
+        });
+      }
     }
 
-    this.wires.clear();
-    this.occupiedSquares.clear();
+    if (this.wires.size === 0 && chosen.wires && chosen.wires.length > 0) {
+      for (const w of chosen.wires) {
+        this.wires.set(w.id, { ...w });
+      }
+    }
 
-    for (const w of chosen.wires) {
-      this.wires.set(w.id, { ...w });
+    // Ensure occupiedSquares correctly mirrors current wires
+    this.occupiedSquares.clear();
+    for (const w of this.wires.values()) {
       for (let i = 1; i < w.path.length - 1; i++) {
         this.occupiedSquares.set(w.path[i], w.id);
+      }
+    }
+
+    // Restore buildings from checkpoint snapshot
+    this.buildings = JSON.parse(JSON.stringify(chosen.buildings));
+
+    // If level failed because a building gave up, reopen it and grant at least rewindTicks on timer
+    for (const b of this.buildings) {
+      if (b.state === 'gave_up') {
+        b.state = 'open';
+        b.timerTicksLeft = Math.max(rewindTicks, b.firstTimerTicks || 200);
+        b.timerPhase = b.hasMetFirstQuota ? 'cycle' : 'first';
+      }
+      // Reconnect wireId to matching wire if one exists
+      const wire = Array.from(this.wires.values()).find(w =>
+        w.buildingId === b.id || w.path[0] === b.square || w.path[w.path.length - 1] === b.square
+      );
+      if (wire) b.wireId = wire.id;
+    }
+
+    // Ensure device wire attachments are linked
+    for (const dev of this.devices.values()) {
+      if (!dev.wireIds) dev.wireIds = new Set();
+      if (!dev.outgoingWireIds) dev.outgoingWireIds = new Set();
+      for (const w of this.wires.values()) {
+        if (w.deviceId === dev.id || w.targetDeviceId === dev.id || w.path[0] === dev.square || w.path[w.path.length - 1] === dev.square) {
+          dev.wireIds.add(w.id);
+          if (w.path[0] === dev.square) dev.outgoingWireIds.add(w.id);
+        }
       }
     }
 
@@ -1296,9 +1497,95 @@ export class NetCitySimulation {
       }
     }
 
-    // 1. Checkpoint capture every 600 ticks
-    if (this.tickNumber % 600 === 0) {
+    // 1. Checkpoint capture every 20 ticks (1 second)
+    if (this.tickNumber % 20 === 0) {
       this.saveCheckpoint();
+    }
+
+    // 1.5. Endless Mode Procedural Spawning & Events (Section 6.1 & 9.7)
+    if (this.isEndless && this.status === 'playing') {
+      if (!this.nextEndlessSpawnTick) this.nextEndlessSpawnTick = 400;
+      if (this.tickNumber >= this.nextEndlessSpawnTick) {
+        const decayFactor = Math.pow(0.92, this.tickNumber / 1200);
+        const baseInterval = this.mapData.baseInterval || 600;
+        const minInterval = this.mapData.minInterval || 200;
+        const nextInterval = Math.max(minInterval, Math.floor(baseInterval * decayFactor));
+
+        const pool = this.mapData.buildingPool || ['laptop', 'classroom'];
+        const bType = pool[Math.floor(this.spawnRng() * pool.length)];
+        const sq = this.findEndlessSquare();
+
+        if (sq !== null) {
+          const newId = this.buildings.length + 1;
+          const quota = bType === 'classroom' ? 3 : (bType === 'lab' ? 5 : (bType === 'library' ? 4 : 2));
+          const firstTimer = this.mapData.firstTimerTicks || 600;
+          const cycleTimer = this.mapData.cycleTimerTicks || 240;
+          const deadline = this.mapData.deadlineTicks || 40;
+          const reqInterval = bType === 'classroom' ? 40 : (bType === 'lab' ? 20 : (bType === 'library' ? 30 : 60));
+          const srv = (this.servers && this.servers.length > 0) ? this.servers[0] : null;
+          const destSquare = srv ? srv.square : this.server;
+          const targetMac = srv ? srv.mac : '00:FE';
+          const targetType = srv ? srv.type : 'server';
+          const targetName = srv ? srv.name : 'Server';
+          const targetColor = srv ? srv.color : '#2ec4b6';
+          const targetServerId = srv ? srv.id : 'server_1';
+
+          const newBuilding = {
+            id: newId,
+            name: `${bType.charAt(0).toUpperCase() + bType.slice(1)} #${newId}`,
+            type: bType,
+            square: sq,
+            state: 'construction',
+            opensAtTick: this.tickNumber + 200,
+            required: true,
+            quota,
+            fulfilledInCycle: 0,
+            firstTimerTicks: firstTimer,
+            cycleTimerTicks: cycleTimer,
+            timerTicksLeft: firstTimer,
+            timerPhase: 'first',
+            deadlineTicks: deadline,
+            requestIntervalTicks: reqInterval,
+            nextRequestTick: this.tickNumber + 200 + Math.floor(this._netRng() * 20),
+            happiness: 100,
+            mac: `00:${(newId + 10).toString(16).toUpperCase()}`,
+            ip: `192.168.1.${10 + newId}`,
+            subnet: '192.168.1.0/24',
+            defaultGateway: '192.168.1.1',
+            destinationSquare: destSquare,
+            targetServerId,
+            targetType,
+            targetMac,
+            targetName,
+            targetColor,
+            deliveredTotal: 0,
+            hasMetFirstQuota: false,
+            wireId: null,
+            warning: false
+          };
+
+          this.buildings.push(newBuilding);
+          this.events.push({
+            type: 'BuildingConstruction',
+            tick: this.tickNumber,
+            buildingId: newId,
+            square: sq,
+            opensAtTick: this.tickNumber + 200
+          });
+
+          this.nextEndlessSpawnTick = this.tickNumber + nextInterval;
+        } else {
+          this.nextEndlessSpawnTick = this.tickNumber + 50;
+        }
+      }
+
+      // Procedural events in Endless
+      if (!this.nextEndlessEventTick) this.nextEndlessEventTick = 1200;
+      if (this.tickNumber >= this.nextEndlessEventTick) {
+        this.triggerEndlessRandomEvent();
+        const evInterval = Math.max(400, Math.floor(1800 * Math.pow(0.90, this.tickNumber / 2400)));
+        this.nextEndlessEventTick = this.tickNumber + evInterval;
+      }
     }
 
     // 2. Building Lifecycle (Construction -> Open)
@@ -1445,13 +1732,19 @@ export class NetCitySimulation {
           if (!blockedReason && (this.mapData.concept === 'static_routes' || this.mapData.concept === 'dynamic_routing')) {
             const destServer = this.getServerAt(b.destinationSquare);
             if (destServer && destServer.subnet && b.subnet && destServer.subnet !== b.subnet) {
-              for (const r of (routeFound.routersCrossed || [])) {
-                const hasStatic = r.staticRoutes && r.staticRoutes.has(destServer.subnet);
-                const hasDynamic = r.dynamicRouting && (r.dynamicRoutes ? r.dynamicRoutes.has(destServer.subnet) : true);
-                const isDirect = r.interfaces && r.interfaces.some(iface => iface.subnet === destServer.subnet);
-                if (!isDirect && !hasStatic && !hasDynamic) {
-                  blockedReason = 'no_route';
-                  break;
+              const routers = routeFound.routersCrossed || [];
+              if (routers.length === 0) {
+                // Cross-network traffic requires a router
+                blockedReason = 'no_route';
+              } else {
+                for (const r of routers) {
+                  const hasStatic = r.staticRoutes && r.staticRoutes.has(destServer.subnet);
+                  const hasDynamic = r.dynamicRouting && (r.dynamicRoutes ? r.dynamicRoutes.has(destServer.subnet) : true);
+                  const isDirect = r.interfaces && r.interfaces.some(iface => iface.subnet === destServer.subnet);
+                  if (!isDirect && !hasStatic && !hasDynamic) {
+                    blockedReason = 'no_route';
+                    break;
+                  }
                 }
               }
             }
@@ -1727,6 +2020,8 @@ export class NetCitySimulation {
             b.fulfilledInCycle = 0;
             b.timerTicksLeft = b.cycleTimerTicks;
             b.timerPhase = 'cycle';
+            if (!this.servedBuildingIds) this.servedBuildingIds = new Set();
+            this.servedBuildingIds.add(b.id);
 
             // First time quota met: 20-coin connection bonus
             if (!b.hasMetFirstQuota) {
@@ -1742,7 +2037,7 @@ export class NetCitySimulation {
     }
     this.inFlightPackets = remainingPackets;
 
-    // Dynamic Happiness Calculation (Level 7.6 Grand Finale)
+    // Dynamic Happiness Calculation (Level 7.6 Grand Finale & Endless Mode)
     let totalHealth = 0;
     let openCount = 0;
     for (const b of this.buildings) {
@@ -1781,7 +2076,7 @@ export class NetCitySimulation {
         this.events.push({ type: 'TimerExpired', tick: this.tickNumber, buildingId: b.id });
 
         // SUDDEN FAILURE RULE: If required, level is immediately over
-        if (b.required) {
+        if (b.required || this.isEndless) {
           this.status = 'level_over';
           this.events.push({ type: 'LevelOver', tick: this.tickNumber, buildingId: b.id });
           return this.events;
@@ -1789,37 +2084,84 @@ export class NetCitySimulation {
       }
     }
 
-    // 6. Win Conditions (Section 3.6: Connect all, Survive, or Keep Happy)
-    if (this.mapData.goal === 'keep_happy') {
-      const targetTicks = this.mapData.targetTicks || 3600;
-      const minHappiness = this.mapData.minHappiness || 80;
-      if (this.tickNumber >= targetTicks) {
-        if (this.happinessMeter >= minHappiness) {
+    // 6. Win Conditions (Skipped in Endless mode)
+    if (!this.isEndless) {
+      if (this.mapData.goal === 'keep_happy') {
+        const targetTicks = this.mapData.targetTicks || 3600;
+        const minHappiness = this.mapData.minHappiness || 80;
+        if (this.tickNumber >= targetTicks) {
+          if (this.happinessMeter >= minHappiness) {
+            this.status = 'won';
+            this.events.push({ type: 'LevelWon', tick: this.tickNumber });
+          } else {
+            this.status = 'level_over';
+            this.events.push({ type: 'LevelOver', tick: this.tickNumber });
+          }
+        }
+      } else if (this.mapData.goal === 'connect_all') {
+        const targetBuildings = this.buildings.filter(b => b.required).length > 0
+          ? this.buildings.filter(b => b.required)
+          : this.buildings;
+        const allTargetOpened = targetBuildings.every(b => b.state !== 'construction');
+        const allTargetMetQuota = targetBuildings.length > 0 && targetBuildings.every(b => b.hasMetFirstQuota);
+        if (allTargetOpened && allTargetMetQuota) {
           this.status = 'won';
           this.events.push({ type: 'LevelWon', tick: this.tickNumber });
-        } else {
-          this.status = 'level_over';
-          this.events.push({ type: 'LevelOver', tick: this.tickNumber });
         }
-      }
-    } else if (this.mapData.goal === 'connect_all') {
-      const targetBuildings = this.buildings.filter(b => b.required).length > 0
-        ? this.buildings.filter(b => b.required)
-        : this.buildings;
-      const allTargetOpened = targetBuildings.every(b => b.state !== 'construction');
-      const allTargetMetQuota = targetBuildings.length > 0 && targetBuildings.every(b => b.hasMetFirstQuota);
-      if (allTargetOpened && allTargetMetQuota) {
-        this.status = 'won';
-        this.events.push({ type: 'LevelWon', tick: this.tickNumber });
-      }
-    } else if (this.mapData.goal && (this.mapData.goal.startsWith('survive') || this.mapData.targetTicks)) {
-      const targetTicks = this.mapData.targetTicks || parseInt(this.mapData.goal.replace(/\D/g, '')) || 3600;
-      if (this.tickNumber >= targetTicks) {
-        this.status = 'won';
-        this.events.push({ type: 'LevelWon', tick: this.tickNumber });
+      } else if (this.mapData.goal && (this.mapData.goal.startsWith('survive') || this.mapData.targetTicks)) {
+        const targetTicks = this.mapData.targetTicks || parseInt(this.mapData.goal.replace(/\D/g, '')) || 3600;
+        if (this.tickNumber >= targetTicks) {
+          this.status = 'won';
+          this.events.push({ type: 'LevelWon', tick: this.tickNumber });
+        }
       }
     }
 
     return this.events;
+  }
+
+  /**
+   * Compute official Endless Mode score (Section 6.1)
+   * Score = seconds survived + (5 * buildings served) + average happiness (0 to 100)
+   */
+  getEndlessScore() {
+    const secondsSurvived = Math.floor(this.tickNumber / 20);
+    const buildingsServed = this.servedBuildingIds ? this.servedBuildingIds.size : 0;
+    const avgHappiness = Math.round(this.happinessMeter !== undefined ? this.happinessMeter : 100);
+    const totalScore = secondsSurvived + (5 * buildingsServed) + avgHappiness;
+    return {
+      totalScore,
+      secondsSurvived,
+      buildingsServed,
+      averageHappiness: avgHappiness,
+      ticks: this.tickNumber
+    };
+  }
+
+  /**
+   * Procedural random events in Endless Mode (Section 8 & 9.7)
+   */
+  triggerEndlessRandomEvent() {
+    const eligible = this.mapData.eligibleEvents || ['CableCut', 'SlowLink'];
+    if (!eligible || eligible.length === 0) return;
+    const evType = eligible[Math.floor(this.eventRng() * eligible.length)];
+
+    if (evType === 'CableCut' && this.wires.size > 0) {
+      const wireList = Array.from(this.wires.values());
+      const targetWire = wireList[Math.floor(this.eventRng() * wireList.length)];
+      if (targetWire) {
+        this.removeWireById(targetWire.id);
+        this.events.push({
+          type: 'CableCut',
+          tick: this.tickNumber,
+          wireId: targetWire.id,
+          buildingId: targetWire.buildingId || null
+        });
+      }
+    } else if (evType === 'ServerCrash' && this.servers && this.servers.length > 1) {
+      const srv = this.servers[Math.floor(this.eventRng() * this.servers.length)];
+      this.crashedServers.add(srv.id);
+      this.events.push({ type: 'ServerCrash', tick: this.tickNumber, serverId: srv.id });
+    }
   }
 }

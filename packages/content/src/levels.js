@@ -31,8 +31,9 @@ export const CHAPTER_1_LEVELS = [
     title: '1.2 Twisted-Pair (Copper) Cable',
     chapter: 1,
     concept: 'twisted_pair_range',
-    learningMoment: 'Twisted-pair cable works well up to about 100 metres.',
-    hint: 'Twisted pair is cheap and common, but signals fade over distance. Watch the far laptop.',
+    objective: 'Connect Classroom & distant Laptop (within 10m copper reach!) & fulfill quotas',
+    learningMoment: 'Twisted-pair copper cables reach up to 10 squares (100 metres). Beyond that, the electrical signal fades!',
+    hint: 'Twisted pair is cheap and common, but signals fade past 10 squares. Route a direct cable to the distant laptop without meandering!',
     grid: { w: 24, h: 14 },
     wiresAllowed: ['twisted_pair'],
     devicesAllowed: ['server'],
@@ -43,11 +44,10 @@ export const CHAPTER_1_LEVELS = [
     walls: 2,
     noisySquares: [],
     start: [
-      { id: 1, type: 'classroom', range: [3, 9], required: true },
-      { id: 2, type: 'classroom', range: [3, 9], required: true }
+      { id: 1, type: 'classroom', range: [3, 5], required: true }
     ],
     spawns: [
-      { tick: 300, type: 'laptop', range: [13, 20], required: false }
+      { tick: 40, type: 'laptop', range: [9, 10], required: true }
     ],
     goal: 'connect_all',
     stars: ['cost', 'reliability']
@@ -57,8 +57,9 @@ export const CHAPTER_1_LEVELS = [
     title: '1.3 Coaxial Cable',
     chapter: 1,
     concept: 'coaxial_shielded',
-    learningMoment: 'Coaxial cable has a metal shield that keeps out electrical noise. It reaches about 185 metres.',
-    hint: 'Workshop machinery causes electrical noise. Unshielded twisted pair drops packets here—use shielded coaxial cable.',
+    objective: 'Connect all 4 buildings & fulfill quotas through the noisy industrial zone',
+    learningMoment: 'Coaxial cable has a braided metal shield that blocks electrical noise and extends reach up to 185 metres.',
+    hint: 'Factory machinery causes electrical noise that drops packets on twisted pair. Use shielded Coaxial cable across the noise zone!',
     grid: { w: 24, h: 14 },
     wiresAllowed: ['twisted_pair', 'coaxial'],
     devicesAllowed: ['server'],
@@ -168,12 +169,13 @@ export const CHAPTER_1_LEVELS = [
     title: '1.7 Bandwidth: Thin Pipe, Fat Pipe',
     chapter: 1,
     concept: 'bandwidth_upgrades',
-    learningMoment: 'Bandwidth is how many packets can pass at once, like lanes on a road.',
-    hint: 'Laptops share connections through the street cabinet. Upgrade the bottleneck link to handle traffic!',
+    objective: 'Connect laptops and upgrade cables to high-bandwidth Multimode Fiber to clear the bottleneck',
+    learningMoment: 'Bandwidth is how many packets can pass at once. Upgrading to Multimode Fiber allows 5x the data throughput!',
+    hint: 'Heavy data packets from all laptops create traffic jams on twisted pair (1 pkt/sec). Upgrade your cables to high-bandwidth Multimode Fiber (5 pkts/sec)!',
     grid: { w: 24, h: 14 },
-    wiresAllowed: ['twisted_pair'],
-    devicesAllowed: ['server', 'cabinet'],
-    coins: 70,
+    wiresAllowed: ['twisted_pair', 'multimode_fiber'],
+    devicesAllowed: ['server'],
+    coins: 80,
     firstTimerTicks: 800,
     cycleTimerTicks: 240,
     deadlineTicks: 40,
@@ -252,11 +254,12 @@ export const CHAPTER_1_LEVELS = [
 export const CHAPTER_2_LEVELS = [
   {
     id: '2.1',
-    title: '2.1 Too Many Cables',
+    title: '2.1 Too Many Cables (Star vs Mesh)',
     chapter: 2,
     concept: 'star_vs_mesh',
+    objective: 'Place a central Street Cabinet and wire all laptops into it (Star Topology)',
     learningMoment: 'A central device that everyone plugs into is called a star network.',
-    hint: 'Direct point-to-point cables create a tangle. Connect all laptops neatly through a central street cabinet.',
+    hint: 'Direct point-to-point cables create an unmanageable tangle. Connect all laptops neatly through a central street cabinet!',
     grid: { w: 28, h: 16 },
     wiresAllowed: ['twisted_pair'],
     devicesAllowed: ['server', 'cabinet'],
@@ -282,8 +285,9 @@ export const CHAPTER_2_LEVELS = [
     title: '2.2 The Hub: Shout to Everyone',
     chapter: 2,
     concept: 'hub_collisions',
-    learningMoment: 'A hub is like shouting across a room. Simultaneous packets collide and vanish.',
-    hint: 'Place a Hub to connect the computer lab. Hubs broadcast everything, so simultaneous packets collide!',
+    objective: 'Place a Hub, connect all laptops to it, and wire the Hub to the Server',
+    learningMoment: 'A hub is like shouting across a room. Simultaneous packets collide and vanish, teaching why smart switches are needed.',
+    hint: 'Place a Hub to connect the lab laptops. Notice the 💥 collision bursts when devices talk at once! Packets retransmit automatically until quotas are met.',
     grid: { w: 28, h: 16 },
     wiresAllowed: ['twisted_pair'],
     devicesAllowed: ['server', 'hub'],
@@ -402,11 +406,12 @@ export const CHAPTER_2_LEVELS = [
 export const CHAPTER_3_LEVELS = [
   {
     id: '3.1',
-    title: '3.1 Two Islands',
+    title: '3.1 Two Islands (Local Network)',
     chapter: 3,
     concept: 'two_islands',
-    learningMoment: 'Separate networks need something to join them.',
-    hint: 'Homes on the left and the school on the right sit across a river. Without a router, packets get stuck at the edge!',
+    objective: 'Wire the School classrooms on the right island directly to the Central Server',
+    learningMoment: 'Switches connect devices within one local network. Devices across the river need a Router, which we unlock next!',
+    hint: 'A local Switch only connects devices on the same island. Wire the right-side classrooms to the Central Server. The homes across the river will wait for a Router in Level 3.2!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber'],
     devicesAllowed: ['server', 'switch'],
@@ -425,17 +430,17 @@ export const CHAPTER_3_LEVELS = [
     spawns: [
       { tick: 600, type: 'home', range: [3, 8], side: 'left', required: false, ip: '192.168.1.12', subnet: '192.168.1.0/24' }
     ],
-    goal: 'survive_1800',
-    targetTicks: 1800,
+    goal: 'connect_all',
     stars: ['cost', 'reliability']
   },
   {
     id: '3.2',
-    title: '3.2 The Router: Border Guard and Guide',
+    title: '3.2 The Router: Connecting the Two Islands',
     chapter: 3,
     concept: 'the_router',
-    learningMoment: 'A switch connects devices inside a network. A router connects networks to each other.',
-    hint: 'Place a router across the river and connect both the home switch and the school switch to it!',
+    objective: 'Place a Router near the bridge and connect both island switches to it',
+    learningMoment: 'A switch connects devices inside a network. A router connects networks to each other across borders.',
+    hint: 'Place a Switch on the left island for homes, a Switch on the right for classrooms, and a Router near the bridge. Connect BOTH switches to the Router so packets can cross!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber'],
     devicesAllowed: ['server', 'switch', 'router'],
@@ -463,8 +468,9 @@ export const CHAPTER_3_LEVELS = [
     title: '3.3 IP Addresses: House Numbers',
     chapter: 3,
     concept: 'ip_addresses',
-    learningMoment: 'An IP address is like a house number plus a street name.',
-    hint: 'Devices without an IP address cannot receive packets. Click each computer to inspect and assign an IP address!',
+    objective: 'Click each unaddressed computer to configure its IP Address and Default Gateway',
+    learningMoment: 'An IP address tells routers where to deliver packets across different networks. The Default Gateway is the router door leading out.',
+    hint: 'Devices without an IP address cannot communicate across networks. Click each computer and assign an IP address (like 192.168.1.10) and Default Gateway (192.168.1.1)!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber'],
     devicesAllowed: ['server', 'switch', 'router'],
@@ -491,8 +497,9 @@ export const CHAPTER_3_LEVELS = [
     title: '3.4 Same Street or Different Street? (Subnets)',
     chapter: 3,
     concept: 'subnets',
+    objective: 'Configure 🔵 Blue laptops to 192.168.1.x and 🟢 Green laptops to 192.168.2.x',
     learningMoment: 'The subnet mask tells you which part of the address is the street and which is the house.',
-    hint: 'Devices in the Blue network need 192.168.1.x; devices in the Green network need 192.168.2.x. Fix any mismatched subnets!',
+    hint: '🔵 Blue laptops need 192.168.1.x; 🟢 Green laptops need 192.168.2.x. Click any mismatched laptop to fix its IP and Subnet!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber'],
     devicesAllowed: ['server', 'switch', 'router'],
@@ -502,14 +509,14 @@ export const CHAPTER_3_LEVELS = [
     deadlineTicks: 40,
     walls: 2,
     start: [
-      { id: 1, type: 'laptop', range: [3, 8], required: true, ip: '192.168.1.10', subnet: '192.168.1.0/24', defaultGateway: '192.168.1.1' },
-      { id: 2, type: 'laptop', range: [3, 8], required: true, ip: '192.168.1.11', subnet: '192.168.1.0/24', defaultGateway: '192.168.1.1' },
-      { id: 3, type: 'laptop', range: [3, 8], required: true, ip: '192.168.2.10', subnet: '192.168.2.0/24', defaultGateway: '192.168.2.1' },
-      { id: 4, type: 'laptop', range: [3, 8], required: true, ip: '192.168.2.11', subnet: '192.168.2.0/24', defaultGateway: '192.168.2.1' }
+      { id: 1, type: 'laptop', range: [3, 8], required: true, ip: '192.168.1.10', subnet: '192.168.1.0/24', defaultGateway: '192.168.1.1', colorGroup: 'blue' },
+      { id: 2, type: 'laptop', range: [3, 8], required: true, ip: '192.168.1.11', subnet: '192.168.1.0/24', defaultGateway: '192.168.1.1', colorGroup: 'blue' },
+      { id: 3, type: 'laptop', range: [3, 8], required: true, ip: '192.168.2.10', subnet: '192.168.2.0/24', defaultGateway: '192.168.2.1', colorGroup: 'green' },
+      { id: 4, type: 'laptop', range: [3, 8], required: true, ip: '192.168.2.11', subnet: '192.168.2.0/24', defaultGateway: '192.168.2.1', colorGroup: 'green' }
     ],
     spawns: [
-      { tick: 500, type: 'laptop', range: [3, 8], required: true, ip: '192.168.1.12', subnet: '192.168.1.0/24', defaultGateway: '192.168.1.1' },
-      { tick: 1000, type: 'laptop', range: [3, 8], required: true, ip: '192.168.2.12', subnet: '192.168.2.0/24', defaultGateway: '192.168.2.1' }
+      { tick: 500, type: 'laptop', range: [3, 8], required: true, ip: '192.168.1.12', subnet: '192.168.1.0/24', defaultGateway: '192.168.1.1', colorGroup: 'blue' },
+      { tick: 1000, type: 'laptop', range: [3, 8], required: true, ip: '192.168.2.12', subnet: '192.168.2.0/24', defaultGateway: '192.168.2.1', colorGroup: 'green' }
     ],
     goal: 'connect_all',
     stars: ['cost', 'reliability']
@@ -572,11 +579,12 @@ export const CHAPTER_3_LEVELS = [
   },
   {
     id: '3.7',
-    title: '3.7 Two Routers',
+    title: '3.7 Two Routers (Multi-Hop)',
     chapter: 3,
     concept: 'multi_hop_routers',
+    objective: 'Connect 3 networks across 2 multi-hop routers to route traffic end-to-end',
     learningMoment: 'Each hop is one router passing the packet to the next.',
-    hint: 'Chain three networks together across two routers. Watch packets hop from router to router in Simulation Mode!',
+    hint: 'Chain three networks together across two routers. Click the Trace button or inspect packets to watch them hop between routers to their destination!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber', 'single_mode_fiber'],
     devicesAllowed: ['server', 'switch', 'router'],
@@ -634,8 +642,9 @@ export const CHAPTER_4_LEVELS = [
     title: '4.1 DHCP: The Automatic Address Giver',
     chapter: 4,
     concept: 'dhcp_server',
+    objective: 'Place a DHCP server to automatically assign IP addresses and fulfill all laptop quotas',
     learningMoment: 'DHCP is like a hotel reception giving every guest a room number automatically.',
-    hint: 'Tired of typing addresses manually? Place a DHCP server on the network to hand out IP addresses automatically!',
+    hint: 'Tired of typing addresses manually? Place a DHCP server on the switch to hand out IP addresses automatically so laptops can fulfill quotas!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber'],
     devicesAllowed: ['server', 'switch', 'router', 'dhcp_server'],
@@ -653,8 +662,7 @@ export const CHAPTER_4_LEVELS = [
       { tick: 450, type: 'laptop', range: [3, 8], required: true, ip: null, subnet: '192.168.1.0/24' },
       { tick: 900, type: 'laptop', range: [3, 8], required: true, ip: null, subnet: '192.168.1.0/24' }
     ],
-    goal: 'survive_3600',
-    targetTicks: 3600,
+    goal: 'connect_all',
     stars: ['cost', 'reliability']
   },
   {
@@ -718,11 +726,12 @@ export const CHAPTER_4_LEVELS = [
   },
   {
     id: '4.4',
-    title: '4.4 Email Servers',
+    title: '4.4 Email Servers (Depot to Depot)',
     chapter: 4,
     concept: 'email_servers',
-    learningMoment: 'Email moves from depot to depot like parcel delivery.',
-    hint: 'Mail travels from laptop to local mail depot, across the router to the remote school depot, and down to the recipient!',
+    objective: 'Wire Domain A laptops to Mail Depot A, Domain B laptops to Mail Depot B, and connect both depots',
+    learningMoment: 'Email moves from depot to depot like parcel delivery across domains.',
+    hint: 'Email uses store-and-forward depots! Connect laptops 1 & 2 to Mail Depot A, laptops 3 & 4 to Mail Depot B, and wire both depots to the router so messages transfer between domains!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber', 'single_mode_fiber'],
     devicesAllowed: ['switch', 'router', 'email_server'],
@@ -784,8 +793,9 @@ export const CHAPTER_4_LEVELS = [
     title: '4.6 The Whole School (Chapter 4 Finale)',
     chapter: 4,
     concept: 'chapter_4_finale',
-    learningMoment: 'The school network runs itself with automated routing and helper services.',
-    hint: 'Build a comprehensive school network with switches, a router, Wi-Fi, DHCP, DNS, and Web servers!',
+    objective: 'Build a complete school network with Switches, Router, Wi-Fi, DHCP, DNS, and Web Servers',
+    learningMoment: 'The DNS server translates names like school.net to IP addresses so computers know where to deliver web traffic.',
+    hint: 'All computers want to visit "school.net"! Place a DNS Server and wire it to your switch so computers can translate "school.net" to IP 192.168.2.50 and reach the Web Server!',
     grid: { w: 32, h: 18 },
     wiresAllowed: ['twisted_pair', 'coaxial', 'multimode_fiber', 'single_mode_fiber'],
     devicesAllowed: ['switch', 'router', 'access_point', 'dhcp_server', 'dns_server', 'web_server'],
@@ -826,24 +836,24 @@ export const CHAPTER_5_LEVELS = [
     coins: 100,
     firstTimerTicks: 600,
     cycleTimerTicks: 240,
-    deadlineTicks: 50,
+    deadlineTicks: 60,
     walls: 2,
     servers: [
-      { id: 'srv_student', name: 'Student Server', type: 'web', zone: 'blue', color: '#38bdf8', icon: '💻', square: 16 * 36 + 32, mac: '00:ST', ip: '192.168.10.50' },
-      { id: 'srv_teacher', name: 'Teacher Server', type: 'web', zone: 'green', color: '#10b981', icon: '🏫', square: 4 * 36 + 32, mac: '00:TC', ip: '192.168.20.50' }
+      { id: 'srv_student', name: 'Student Server', type: 'web', zone: 'blue', color: '#38bdf8', icon: '💻', square: 13 * 36 + 24, mac: '00:ST', ip: '192.168.10.50' },
+      { id: 'srv_teacher', name: 'Teacher Server', type: 'web', zone: 'green', color: '#10b981', icon: '🏫', square: 6 * 36 + 24, mac: '00:TC', ip: '192.168.20.50' }
     ],
     start: [
-      { id: 1, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_student' },
-      { id: 2, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_student' },
-      { id: 3, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_student' },
-      { id: 4, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_student' },
-      { id: 5, type: 'classroom', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_teacher' },
-      { id: 6, type: 'classroom', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_teacher' }
+      { id: 1, type: 'laptop', zone: 'blue', square: 12 * 36 + 12, required: true, targetServerId: 'srv_student' },
+      { id: 2, type: 'laptop', zone: 'blue', square: 12 * 36 + 14, required: true, targetServerId: 'srv_student' },
+      { id: 3, type: 'laptop', zone: 'blue', square: 14 * 36 + 12, required: true, targetServerId: 'srv_student' },
+      { id: 4, type: 'laptop', zone: 'blue', square: 14 * 36 + 14, required: true, targetServerId: 'srv_student' },
+      { id: 5, type: 'classroom', zone: 'green', square: 5 * 36 + 12, required: true, targetServerId: 'srv_teacher' },
+      { id: 6, type: 'classroom', zone: 'green', square: 5 * 36 + 14, required: true, targetServerId: 'srv_teacher' }
     ],
     spawns: [
-      { tick: 600, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_student' },
-      { tick: 1200, type: 'classroom', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_teacher' },
-      { tick: 1800, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_student' }
+      { tick: 600, type: 'laptop', zone: 'blue', square: 15 * 36 + 12, required: true, targetServerId: 'srv_student' },
+      { tick: 1200, type: 'classroom', zone: 'green', square: 7 * 36 + 13, required: true, targetServerId: 'srv_teacher' },
+      { tick: 1800, type: 'laptop', zone: 'blue', square: 15 * 36 + 14, required: true, targetServerId: 'srv_student' }
     ],
     events: [
       { tick: 2100, type: 'WrongZoneTest', targetBuildingId: 1, expectedZone: 'green' }
@@ -868,21 +878,21 @@ export const CHAPTER_5_LEVELS = [
     deadlineTicks: 50,
     walls: 2,
     servers: [
-      { id: 'srv_library', name: 'Library Server', type: 'web', zone: 'green', color: '#10b981', icon: '📚', square: 4 * 36 + 32, mac: '00:LB', ip: '192.168.20.10' },
-      { id: 'srv_gradebook', name: 'Gradebook Server', type: 'web', zone: 'green', color: '#e63946', icon: '🔒', square: 16 * 36 + 32, mac: '00:GB', ip: '192.168.20.20' }
+      { id: 'srv_library', name: 'Library Server', type: 'web', zone: 'green', color: '#10b981', icon: '📚', square: 7 * 36 + 24, mac: '00:LB', ip: '192.168.20.10' },
+      { id: 'srv_gradebook', name: 'Gradebook Server', type: 'web', zone: 'green', color: '#e63946', icon: '🔒', square: 13 * 36 + 24, mac: '00:GB', ip: '192.168.20.20' }
     ],
     start: [
-      { id: 1, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' },
-      { id: 2, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' },
-      { id: 3, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' },
-      { id: 4, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' },
-      { id: 5, type: 'classroom', zone: 'green', range: [3, 8], required: false, targetServerId: 'srv_gradebook' },
-      { id: 6, type: 'classroom', zone: 'green', range: [3, 8], required: false, targetServerId: 'srv_gradebook' }
+      { id: 1, type: 'laptop', zone: 'blue', square: 8 * 36 + 9, required: true, targetServerId: 'srv_library' },
+      { id: 2, type: 'laptop', zone: 'blue', square: 8 * 36 + 13, required: true, targetServerId: 'srv_library' },
+      { id: 3, type: 'laptop', zone: 'blue', square: 12 * 36 + 9, required: true, targetServerId: 'srv_library' },
+      { id: 4, type: 'laptop', zone: 'blue', square: 12 * 36 + 13, required: true, targetServerId: 'srv_library' },
+      { id: 5, type: 'classroom', zone: 'green', square: 4 * 36 + 10, required: false, targetServerId: 'srv_gradebook' },
+      { id: 6, type: 'classroom', zone: 'green', square: 4 * 36 + 14, required: false, targetServerId: 'srv_gradebook' }
     ],
     spawns: [
-      { tick: 600, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' },
-      { tick: 1200, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' },
-      { tick: 1800, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_library' }
+      { tick: 600, type: 'laptop', zone: 'blue', square: 10 * 36 + 8, required: true, targetServerId: 'srv_library' },
+      { tick: 1200, type: 'laptop', zone: 'blue', square: 10 * 36 + 14, required: true, targetServerId: 'srv_library' },
+      { tick: 1800, type: 'laptop', zone: 'blue', square: 10 * 36 + 11, required: true, targetServerId: 'srv_library' }
     ],
     goal: 'connect_all',
     stars: ['cost', 'reliability']
@@ -892,31 +902,31 @@ export const CHAPTER_5_LEVELS = [
     title: '5.3 Maps for Routers (Static Routes)',
     chapter: 5,
     concept: 'static_routes',
-    learningMoment: 'A router needs instructions for reaching networks it is not directly connected to. A static route is a hand-drawn map.',
-    hint: 'Configure static routes so routers know how to forward cross-network traffic! To reach Network C, go via Router B.',
+    learningMoment: 'A router needs instructions for reaching networks it is not directly connected to. A static route is a hand-drawn map telling the router where to send packets.',
+    hint: 'Connect the buildings to Server C (192.168.30.0/24) via a Router. Click the Router, and add a Static Route with destination 192.168.30.0/24 so it knows where to forward packets!',
     grid: { w: 36, h: 20 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber', 'single_mode_fiber'],
-    devicesAllowed: ['router', 'switch'],
+    devicesAllowed: ['router'],
     coins: 120,
     firstTimerTicks: 600,
     cycleTimerTicks: 240,
     deadlineTicks: 60,
     walls: 3,
     servers: [
-      { id: 'srv_net_c', name: 'Network C Server', type: 'web', color: '#8338ec', icon: '🌐', square: 10 * 36 + 32, mac: '00:NC', subnet: '192.168.30.0/24', ip: '192.168.30.50' }
+      { id: 'srv_net_c', name: 'Server C (192.168.30.0/24)', type: 'web', color: '#8338ec', icon: '🌐', square: 10 * 36 + 24, mac: '00:NC', subnet: '192.168.30.0/24', ip: '192.168.30.50' }
     ],
     start: [
-      { id: 1, type: 'laptop', subnet: '192.168.10.0/24', ip: '192.168.10.2', gateway: '192.168.10.1', targetServerId: 'srv_net_c', required: true },
-      { id: 2, type: 'classroom', subnet: '192.168.10.0/24', ip: '192.168.10.3', gateway: '192.168.10.1', targetServerId: 'srv_net_c', required: true },
-      { id: 3, type: 'laptop', subnet: '192.168.20.0/24', ip: '192.168.20.2', gateway: '192.168.20.1', targetServerId: 'srv_net_c', required: true },
-      { id: 4, type: 'classroom', subnet: '192.168.20.0/24', ip: '192.168.20.3', gateway: '192.168.20.1', targetServerId: 'srv_net_c', required: true },
-      { id: 5, type: 'laptop', subnet: '192.168.20.0/24', ip: '192.168.20.5', gateway: '192.168.20.1', targetServerId: 'srv_net_c', required: true },
-      { id: 6, type: 'classroom', subnet: '192.168.20.0/24', ip: '192.168.20.6', gateway: '192.168.20.1', targetServerId: 'srv_net_c', required: true }
+      { id: 1, type: 'laptop', subnet: '192.168.10.0/24', ip: '192.168.10.2', gateway: '192.168.10.1', targetServerId: 'srv_net_c', square: 5 * 36 + 10, required: true },
+      { id: 2, type: 'classroom', subnet: '192.168.10.0/24', ip: '192.168.10.3', gateway: '192.168.10.1', targetServerId: 'srv_net_c', square: 6 * 36 + 13, required: true },
+      { id: 3, type: 'laptop', subnet: '192.168.20.0/24', ip: '192.168.20.2', gateway: '192.168.20.1', targetServerId: 'srv_net_c', square: 13 * 36 + 10, required: true },
+      { id: 4, type: 'classroom', subnet: '192.168.20.0/24', ip: '192.168.20.3', gateway: '192.168.20.1', targetServerId: 'srv_net_c', square: 14 * 36 + 13, required: true },
+      { id: 5, type: 'laptop', subnet: '192.168.20.0/24', ip: '192.168.20.5', gateway: '192.168.20.1', targetServerId: 'srv_net_c', square: 15 * 36 + 8, required: true },
+      { id: 6, type: 'classroom', subnet: '192.168.20.0/24', ip: '192.168.20.6', gateway: '192.168.20.1', targetServerId: 'srv_net_c', square: 16 * 36 + 11, required: true }
     ],
     spawns: [
-      { tick: 900, type: 'laptop', subnet: '192.168.10.0/24', ip: '192.168.10.4', gateway: '192.168.10.1', targetServerId: 'srv_net_c', required: true },
-      { tick: 1200, type: 'laptop', subnet: '192.168.20.0/24', ip: '192.168.20.4', gateway: '192.168.20.1', targetServerId: 'srv_net_c', required: true },
-      { tick: 1500, type: 'laptop', subnet: '192.168.10.0/24', ip: '192.168.10.5', gateway: '192.168.10.1', targetServerId: 'srv_net_c', required: true }
+      { tick: 900, type: 'laptop', subnet: '192.168.10.0/24', ip: '192.168.10.4', gateway: '192.168.10.1', targetServerId: 'srv_net_c', square: 7 * 36 + 9, required: true },
+      { tick: 1200, type: 'laptop', subnet: '192.168.20.0/24', ip: '192.168.20.4', gateway: '192.168.20.1', targetServerId: 'srv_net_c', square: 12 * 36 + 14, required: true },
+      { tick: 1500, type: 'laptop', subnet: '192.168.10.0/24', ip: '192.168.10.5', gateway: '192.168.10.1', targetServerId: 'srv_net_c', square: 4 * 36 + 12, required: true }
     ],
     goal: 'connect_all',
     stars: ['cost', 'speed']
@@ -927,32 +937,32 @@ export const CHAPTER_5_LEVELS = [
     chapter: 5,
     concept: 'dynamic_routing',
     isChallenge: true,
-    learningMoment: 'Routers gossip: I can reach this network, and I am this far from it. Dynamic routing recalculates paths when links cut.',
-    hint: 'A ring of 4 networks and 4 routers. Enable dynamic routing so routers exchange maps and recover automatically from link cuts!',
+    learningMoment: 'Routers gossip: "I can reach this network, and I am this far from it." Dynamic routing recalculates paths automatically when links cut.',
+    hint: 'A ring of separate subnets. Connect them using Routers and enable Dynamic Routing (RIP) so routers share maps and automatically route around broken links!',
     grid: { w: 36, h: 20 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber', 'single_mode_fiber'],
-    devicesAllowed: ['router', 'switch'],
+    devicesAllowed: ['router'],
     coins: 130,
     firstTimerTicks: 600,
     cycleTimerTicks: 240,
     deadlineTicks: 60,
     walls: 2,
     servers: [
-      { id: 'srv_hub', name: 'Ring Core Server', type: 'web', square: 10 * 36 + 18, mac: '00:RC', ip: '192.168.100.50' }
+      { id: 'srv_hub', name: 'Ring Core Server', type: 'web', square: 10 * 36 + 18, mac: '00:RC', subnet: '192.168.100.0/24', ip: '192.168.100.50' }
     ],
     start: [
-      { id: 1, type: 'laptop', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 2, type: 'classroom', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 3, type: 'laptop', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 4, type: 'classroom', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 5, type: 'laptop', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 6, type: 'classroom', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 7, type: 'laptop', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { id: 8, type: 'classroom', range: [3, 8], required: true, targetServerId: 'srv_hub' }
+      { id: 1, type: 'laptop', subnet: '192.168.10.0/24', square: 4 * 36 + 16, required: true, targetServerId: 'srv_hub' },
+      { id: 2, type: 'classroom', subnet: '192.168.10.0/24', square: 4 * 36 + 20, required: true, targetServerId: 'srv_hub' },
+      { id: 3, type: 'laptop', subnet: '192.168.20.0/24', square: 9 * 36 + 26, required: true, targetServerId: 'srv_hub' },
+      { id: 4, type: 'classroom', subnet: '192.168.20.0/24', square: 12 * 36 + 26, required: true, targetServerId: 'srv_hub' },
+      { id: 5, type: 'laptop', subnet: '192.168.30.0/24', square: 16 * 36 + 16, required: true, targetServerId: 'srv_hub' },
+      { id: 6, type: 'classroom', subnet: '192.168.30.0/24', square: 16 * 36 + 20, required: true, targetServerId: 'srv_hub' },
+      { id: 7, type: 'laptop', subnet: '192.168.40.0/24', square: 9 * 36 + 10, required: true, targetServerId: 'srv_hub' },
+      { id: 8, type: 'classroom', subnet: '192.168.40.0/24', square: 12 * 36 + 10, required: true, targetServerId: 'srv_hub' }
     ],
     spawns: [
-      { tick: 900, type: 'laptop', range: [3, 8], required: true, targetServerId: 'srv_hub' },
-      { tick: 1500, type: 'classroom', range: [3, 8], required: true, targetServerId: 'srv_hub' }
+      { tick: 900, type: 'laptop', subnet: '192.168.10.0/24', square: 3 * 36 + 18, required: true, targetServerId: 'srv_hub' },
+      { tick: 1500, type: 'classroom', subnet: '192.168.20.0/24', square: 17 * 36 + 18, required: true, targetServerId: 'srv_hub' }
     ],
     events: [
       { tick: 1200, type: 'LinkCut', routerPair: [2, 3] }
@@ -977,27 +987,27 @@ export const CHAPTER_5_LEVELS = [
     deadlineTicks: 60,
     walls: 3,
     servers: [
-      { id: 'srv_campus_web', name: 'Campus Portal', type: 'web', zone: 'blue', color: '#38bdf8', square: 3 * 36 + 32, mac: '00:CP', ip: '192.168.1.50' },
-      { id: 'srv_campus_lib', name: 'Campus Library', type: 'web', zone: 'green', color: '#10b981', square: 10 * 36 + 32, mac: '00:CL', ip: '192.168.2.50' },
-      { id: 'srv_campus_admin', name: 'Campus Admin', type: 'web', zone: 'orange', color: '#f59e0b', square: 17 * 36 + 32, mac: '00:CA', ip: '192.168.3.50' }
+      { id: 'srv_campus_web', name: 'Campus Portal', type: 'web', zone: 'blue', color: '#38bdf8', square: 4 * 36 + 24, mac: '00:CP', ip: '192.168.1.50' },
+      { id: 'srv_campus_lib', name: 'Campus Library', type: 'web', zone: 'green', color: '#10b981', square: 10 * 36 + 24, mac: '00:CL', ip: '192.168.2.50' },
+      { id: 'srv_campus_admin', name: 'Campus Admin', type: 'web', zone: 'orange', color: '#f59e0b', square: 16 * 36 + 24, mac: '00:CA', ip: '192.168.3.50' }
     ],
     start: [
-      { id: 1, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_campus_web' },
-      { id: 2, type: 'classroom', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_campus_lib' },
-      { id: 3, type: 'laptop', zone: 'orange', range: [3, 8], required: true, targetServerId: 'srv_campus_admin' },
-      { id: 4, type: 'classroom', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_campus_web' },
-      { id: 5, type: 'laptop', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_campus_lib' },
-      { id: 6, type: 'classroom', zone: 'orange', range: [3, 8], required: true, targetServerId: 'srv_campus_admin' }
+      { id: 1, type: 'laptop', zone: 'blue', square: 4 * 36 + 9, required: true, targetServerId: 'srv_campus_web' },
+      { id: 2, type: 'classroom', zone: 'green', square: 10 * 36 + 9, required: true, targetServerId: 'srv_campus_lib' },
+      { id: 3, type: 'laptop', zone: 'orange', square: 16 * 36 + 9, required: true, targetServerId: 'srv_campus_admin' },
+      { id: 4, type: 'classroom', zone: 'blue', square: 4 * 36 + 13, required: true, targetServerId: 'srv_campus_web' },
+      { id: 5, type: 'laptop', zone: 'green', square: 10 * 36 + 13, required: true, targetServerId: 'srv_campus_lib' },
+      { id: 6, type: 'classroom', zone: 'orange', square: 16 * 36 + 13, required: true, targetServerId: 'srv_campus_admin' }
     ],
     spawns: [
-      { tick: 400, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_campus_web' },
-      { tick: 800, type: 'classroom', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_campus_lib' },
-      { tick: 1200, type: 'laptop', zone: 'orange', range: [3, 8], required: true, targetServerId: 'srv_campus_admin' },
-      { tick: 1600, type: 'classroom', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_campus_web' },
-      { tick: 2000, type: 'laptop', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_campus_lib' },
-      { tick: 2400, type: 'classroom', zone: 'orange', range: [3, 8], required: true, targetServerId: 'srv_campus_admin' },
-      { tick: 2800, type: 'laptop', zone: 'blue', range: [3, 8], required: true, targetServerId: 'srv_campus_web' },
-      { tick: 3200, type: 'classroom', zone: 'green', range: [3, 8], required: true, targetServerId: 'srv_campus_lib' }
+      { tick: 400, type: 'laptop', zone: 'blue', square: 3 * 36 + 11, required: true, targetServerId: 'srv_campus_web' },
+      { tick: 800, type: 'classroom', zone: 'green', square: 9 * 36 + 11, required: true, targetServerId: 'srv_campus_lib' },
+      { tick: 1200, type: 'laptop', zone: 'orange', square: 15 * 36 + 11, required: true, targetServerId: 'srv_campus_admin' },
+      { tick: 1600, type: 'classroom', zone: 'blue', square: 4 * 36 + 15, required: true, targetServerId: 'srv_campus_web' },
+      { tick: 2000, type: 'laptop', zone: 'green', square: 10 * 36 + 15, required: true, targetServerId: 'srv_campus_lib' },
+      { tick: 2400, type: 'classroom', zone: 'orange', square: 16 * 36 + 15, required: true, targetServerId: 'srv_campus_admin' },
+      { tick: 2800, type: 'laptop', zone: 'blue', square: 5 * 36 + 7, required: true, targetServerId: 'srv_campus_web' },
+      { tick: 3200, type: 'classroom', zone: 'green', square: 11 * 36 + 7, required: true, targetServerId: 'srv_campus_lib' }
     ],
     goal: 'connect_all',
     stars: ['cost', 'calm']
@@ -1011,7 +1021,7 @@ export const CHAPTER_6_LEVELS = [
     chapter: 6,
     concept: 'firewall',
     learningMoment: 'A firewall checks every packet against a guest list. It allows or blocks traffic based on rules.',
-    hint: 'Place a firewall and configure rule cards (Allow/Block) to block rogue traffic while allowing legitimate student packets!',
+    hint: 'Place a Firewall between the Rogue Device and your Server. Click the Firewall to add a rule: BLOCK 10.99.99.99 to drop unauthorized packets!',
     grid: { w: 36, h: 20 },
     wiresAllowed: ['twisted_pair', 'multimode_fiber'],
     devicesAllowed: ['firewall', 'switch', 'router'],

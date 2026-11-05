@@ -152,3 +152,118 @@ test('Campaign UI: Entry screen is fullscreen Campaign, Learn is dedicated page,
     globalThis.cancelAnimationFrame = prevCaf;
   }
 });
+
+test('Toolbar Layout: Bottom dock toolbar is dedicated footer outside canvas-wrapper to prevent obscuring map', () => {
+  const mockDOM = createMockDOM();
+  const prevWindow = globalThis.window;
+  const prevDoc = globalThis.document;
+
+  globalThis.window = mockDOM.window;
+  globalThis.document = mockDOM.document;
+
+  try {
+    const container = mockDOM.document.createElement('div');
+    const ui = new NetCityClientUI(container);
+
+    const canvasWrapper = container.querySelector('#nc-canvas-wrapper');
+    const bottomDock = container.querySelector('#nc-bottom-dock');
+    const screenGame = container.querySelector('#nc-screen-game');
+
+    assert.ok(canvasWrapper, 'Canvas wrapper must exist');
+    assert.ok(bottomDock, 'Bottom dock must exist');
+    assert.ok(screenGame, 'Game screen must exist');
+
+    // Verify in HTML template that bottom dock is outside </main> canvas-wrapper
+    const html = container.innerHTML;
+    const mainCloseIdx = html.indexOf('</main>');
+    const bottomDockIdx = html.indexOf('id="nc-bottom-dock"');
+    assert.ok(mainCloseIdx !== -1, '</main> tag must exist in template');
+    assert.ok(bottomDockIdx !== -1, 'nc-bottom-dock must exist in template');
+    assert.ok(bottomDockIdx > mainCloseIdx, 'Bottom dock must be placed AFTER </main> so canvas never overlaps it');
+
+    // Verify camera fit accommodates grid without clipping
+    ui.camera.fit(800, 600, 32, 18);
+    const sz = ui.camera.baseSquareSize;
+    assert.ok(sz >= 12, 'Square size must be at least 12');
+    assert.ok(32 * sz <= 800, 'Total grid width must fit within available width');
+    assert.ok(18 * sz <= 600, 'Total grid height must fit within available height');
+    assert.ok(ui.camera.x >= 0, 'Camera X offset must be non-negative');
+    assert.ok(ui.camera.y >= 0, 'Camera Y offset must be non-negative');
+
+    // Verify hint pill hides when empty
+    ui.hudController.setHint('');
+    assert.equal(ui.hintBarEl.style.display, 'none', 'Hint bar should be hidden when empty');
+
+    ui.hudController.setHint('Connect twisted pair cable');
+    assert.equal(ui.hintBarEl.style.display, 'inline-flex', 'Hint bar should be visible with text');
+
+    ui.destroy();
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDoc;
+  }
+});
+
+test('Learn Screen Back Navigation: Returns to exact previous page (game, endless, or specific chapter view)', () => {
+  const mockDOM = createMockDOM();
+  const prevWindow = globalThis.window;
+  const prevDoc = globalThis.document;
+
+  globalThis.window = mockDOM.window;
+  globalThis.document = mockDOM.document;
+
+  try {
+    const container = mockDOM.document.createElement('div');
+    const ui = new NetCityClientUI(container);
+
+    // Scenario 1: User is in Gameplay -> opens Guide -> clicking Back returns to Gameplay
+    ui._loadLevel('1.2', 'seed-1');
+    ui._setScreen('game');
+    assert.equal(ui.currentScreen, 'game');
+
+    ui._showTutorialModal('ports_wiring');
+    assert.equal(ui.currentScreen, 'learn', 'Must navigate to learn screen');
+    assert.equal(ui.screenLearnEl.style.display, 'flex');
+
+    const backPlayBtn = ui.screenLearnEl.querySelector('#nc-learn-back-play');
+    assert.ok(backPlayBtn, 'Back button must exist on learn screen');
+    assert.ok(ui.screenLearnEl.innerHTML.includes('Back to Game'), 'Template should indicate returning to Game');
+    backPlayBtn.onclick();
+
+    assert.equal(ui.currentScreen, 'game', 'Must return to game screen, not homepage');
+    assert.equal(ui.screenGameEl.style.display, 'flex');
+
+    // Scenario 2: User is in Chapter 3 Level List -> opens Learn -> header Back returns to Chapter 3 Level List
+    ui._campaignView = 'chapter_levels';
+    ui._currentViewingCh = 3;
+    ui._setScreen('campaign');
+
+    ui._setScreen('learn');
+    ui._renderLearnScreen();
+
+    const headerBackBtn = ui.screenLearnEl.querySelector('#nc-learn-btn-back');
+    assert.ok(headerBackBtn, 'Header back button must exist on learn screen');
+    headerBackBtn.onclick();
+
+    assert.equal(ui.currentScreen, 'campaign', 'Must return to campaign');
+    assert.equal(ui._campaignView, 'chapter_levels', 'Must preserve chapter levels view, not reset to chapters');
+    assert.equal(ui._currentViewingCh, 3, 'Must preserve Chapter 3 selection');
+
+    // Scenario 3: User is in Endless Portal -> opens Learn -> Back returns to Endless Portal
+    ui._setScreen('endless');
+    ui._setScreen('learn');
+    ui._renderLearnScreen();
+
+    const backBtn3 = ui.screenLearnEl.querySelector('#nc-learn-back-play');
+    assert.ok(ui.screenLearnEl.innerHTML.includes('Back to Endless'), 'Template should indicate returning to Endless');
+    backBtn3.onclick();
+
+    assert.equal(ui.currentScreen, 'endless', 'Must return to endless portal, not homepage');
+    assert.equal(ui.screenEndlessEl.style.display, 'flex');
+
+    ui.destroy();
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDoc;
+  }
+});

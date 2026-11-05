@@ -891,7 +891,7 @@ test('Level 2.4: Switch MAC Address Table ("The Notebook") learning entries upon
 
 test('UI & CSS Layout: Fullscreen flex hierarchy and zero stray syntax', async () => {
   const fs = await import('node:fs');
-  const cssPaths = ['apps/client/public/game.css', 'public/game/game.css'];
+  const cssPaths = ['apps/client/public/game.css'];
 
   for (const p of cssPaths) {
     const css = fs.readFileSync(p, 'utf8');

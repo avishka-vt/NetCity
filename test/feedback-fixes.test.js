@@ -17,6 +17,7 @@ import { showLevelWonModal, showLevelOverModal } from '../apps/client/src/ui/mod
 import { showSwitchNotebook, showRouterInspector, showFirewallInspector, showWireInspector, showBuildingInspector } from '../apps/client/src/ui/modals/inspectors.js';
 import { generateLevelMap } from '../apps/client/src/core/level-loader.js';
 import { CanvasRenderer } from '../apps/client/src/rendering/canvas-renderer.js';
+import { Camera } from '../apps/client/src/rendering/camera.js';
 import { bfsPath } from '../packages/sim/src/pathfinding.js';
 import { createMockDOM } from './mock-dom.js';
 
@@ -858,4 +859,75 @@ test('Canvas Rendering: All 44 levels + endless mode render completely with zero
     const texts = drawnOperations.filter(d => d.op === 'fillText').map(d => d.text);
     assert.ok(texts.length > 0, `Level ${lvl.id} must render text labels on canvas`);
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 22. Grid Sizing & Tag Cleanup: End device tags removed, server tags kept, larger sprites
+// ─────────────────────────────────────────────────────────────────────────────
+test('Grid Sizing & Tag Cleanup: End devices have no floating pill tags, servers keep tags, larger grid scale', () => {
+  const drawnTexts = [];
+  const mockCanvasCtx = {
+    save() {},
+    restore() {},
+    translate() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    stroke() {},
+    fill() {},
+    fillRect() {},
+    strokeRect() {},
+    rect() {},
+    roundRect() {},
+    arc() {},
+    ellipse() {},
+    fillText(text, x, y) {
+      drawnTexts.push(text);
+    },
+    drawImage() {},
+    createLinearGradient() { return { addColorStop() {} }; },
+    createRadialGradient() { return { addColorStop() {} }; },
+    measureText(str) { return { width: (str || '').length * 8 }; },
+    setLineDash() {},
+    canvas: { width: 1024, height: 600 }
+  };
+
+  const assets = new AssetManager();
+  // Register assets
+  assets.images.set('buildings/laptop', { complete: true, naturalWidth: 480, naturalHeight: 389 });
+  assets.images.set('devices/server', { complete: true, naturalWidth: 480, naturalHeight: 480 });
+
+  const renderer = new CanvasRenderer({ width: 1024, height: 600 }, mockCanvasCtx, assets);
+
+  const { levelDef, mapData } = generateLevelMap('3.4', 'test-tags-seed');
+  const sim = new NetCitySimulation(mapData);
+  const camera = { x: 50, y: 50, baseSquareSize: 48, zoom: 1 };
+
+  renderer.render({
+    sim,
+    camera,
+    levelDef,
+    isDragging: false,
+    dragPath: [],
+    dragValidity: { valid: true },
+    activeWireType: 'twisted_pair',
+    collisionBursts: [],
+    cursorSquare: null,
+    heldItem: null,
+    activeTool: null,
+    deviceBtns: {}
+  });
+
+  // 1. Verify NO end device tags like "Blue Laptop" or "Green Laptop" are rendered on canvas
+  const hasLaptopTag = drawnTexts.some(t => t.includes('Laptop') || t.includes('School'));
+  assert.equal(hasLaptopTag, false, 'End devices (laptops, schools) must NOT have floating pill tags');
+
+  // 2. Verify server tag IS kept
+  const hasServerTag = drawnTexts.some(t => t.includes('Server') || t.includes('Gradebook') || t.includes('Library'));
+  assert.ok(hasServerTag, 'Server floating pill badges must be kept for server identification');
+
+  // 3. Verify camera minimum square size ensures legible grid
+  const testCam = new Camera();
+  testCam.fit(1024, 462, 32, 18, { top: 50, bottom: 60, left: 20, right: 20 }, 44);
+  assert.ok(testCam.baseSquareSize >= 44, 'Base square size must be at least 44px on small viewports');
 });

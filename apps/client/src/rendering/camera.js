@@ -21,8 +21,9 @@ export class Camera {
    * @param {number} gridW
    * @param {number} gridH
    * @param {number|Object} padding
+   * @param {number} minSquareSize
    */
-  fit(availW, availH, gridW, gridH, padding = 16) {
+  fit(availW, availH, gridW, gridH, padding = 16, minSquareSize = 12) {
     if (!gridW || !gridH || !availW || !availH) return;
     let padTop = 16;
     let padBottom = 16;
@@ -42,7 +43,7 @@ export class Camera {
     const effW = Math.max(100, availW - padLeft - padRight);
     const effH = Math.max(100, availH - padTop - padBottom);
     const sz = Math.floor(Math.min(effW / gridW, effH / gridH));
-    this.baseSquareSize = Math.max(12, sz);
+    this.baseSquareSize = Math.max(minSquareSize, sz);
     this.zoom = 1.0;
 
     const totalW = gridW * this.baseSquareSize;

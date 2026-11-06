@@ -189,7 +189,11 @@ export class AssetManager {
       ((type.startsWith('lab') || type.startsWith('computer_lab')) ? this.get('buildings/lab') : null) ||
       (type.startsWith('phone') ? this.get('buildings/phone') : null);
     if (!img) return false;
-    const drawScale = (type.startsWith('sports_ground') || type.startsWith('ground')) ? 0.85 : 0.70;
+    const drawScale = (type.startsWith('sports_ground') || type.startsWith('ground'))
+      ? 1.25
+      : ((type.startsWith('school') || type.startsWith('classroom') || type.startsWith('library'))
+          ? 1.15
+          : ((type.startsWith('lab') || type.startsWith('computer_lab')) ? 1.10 : 0.98));
     return this.drawCrisp(ctx, img, cx, cy, sz * drawScale, sz * drawScale);
   }
 
@@ -198,7 +202,8 @@ export class AssetManager {
     if (type === 'ap' || type === 'access_point') key = 'devices/access_point';
     const img = this.get(key) || (type.startsWith('router') ? this.get('devices/router') : null);
     if (!img) return false;
-    return this.drawCrisp(ctx, img, cx, cy, sz * 0.82, sz * 0.82);
+    const drawScale = (type === 'cabinet' || type.startsWith('cabinet')) ? 1.05 : 0.95;
+    return this.drawCrisp(ctx, img, cx, cy, sz * drawScale, sz * drawScale);
   }
 
   drawServer(ctx, type, cx, cy, sz) {
@@ -211,7 +216,7 @@ export class AssetManager {
 
     const img = this.get(key) || this.get('devices/server');
     if (!img) return false;
-    return this.drawCrisp(ctx, img, cx, cy, sz * 0.85, sz * 0.85);
+    return this.drawCrisp(ctx, img, cx, cy, sz * 1.05, sz * 1.05);
   }
 
   getChapterAssetPath(chNum) {

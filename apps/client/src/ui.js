@@ -512,11 +512,11 @@ export class NetCityClientUI {
   _fitCamera() {
     if (!this.sim || !this.canvas) return;
     this.camera.fit(this.canvas.width, this.canvas.height, this.sim.width, this.sim.height, {
-      top: 76,
-      bottom: 96,
-      left: 28,
-      right: 28
-    });
+      top: 50,
+      bottom: 60,
+      left: 20,
+      right: 20
+    }, 44);
     this.baseSquareSize = this.camera.baseSquareSize;
   }
 

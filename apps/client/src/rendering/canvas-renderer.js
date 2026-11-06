@@ -428,7 +428,7 @@ export class CanvasRenderer {
         if ((isBlueZone || isGreenZone || isOrangeZone) && b.state !== 'gave_up') {
           ctx.save();
           ctx.beginPath();
-          ctx.arc(bx + sz / 2, by + sz * 0.58, sz * 0.38, 0, Math.PI * 2);
+          ctx.arc(bx + sz / 2, by + sz * 0.54, sz * 0.44, 0, Math.PI * 2);
           if (isBlueZone) {
             ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
             ctx.strokeStyle = '#38bdf8';
@@ -487,7 +487,7 @@ export class CanvasRenderer {
             else if (isOrangeZone) bldgType = 'lab_orange';
             else bldgType = 'lab';
           }
-          const bldgDrawn = this.assets ? this.assets.drawBuilding(ctx, bldgType, bx + sz / 2, by + (showMac && b.mac ? sz * 0.40 : sz * 0.46), sz, buildingZone) : false;
+          const bldgDrawn = this.assets ? this.assets.drawBuilding(ctx, bldgType, bx + sz / 2, by + (showMac && b.mac ? sz * 0.42 : sz * 0.48), sz, buildingZone) : false;
           if (!bldgDrawn) {
             let icon = '🏫';
             if (b.state === 'gave_up') {
@@ -506,61 +506,16 @@ export class CanvasRenderer {
               icon = '🖥️';
             }
 
-            ctx.font = `${Math.floor(sz * 0.52)}px sans-serif`;
+            ctx.font = `${Math.floor(sz * 0.58)}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(icon, bx + sz / 2, by + (showMac && b.mac ? sz * 0.40 : sz * 0.46));
+            ctx.fillText(icon, bx + sz / 2, by + (showMac && b.mac ? sz * 0.42 : sz * 0.48));
           }
         }
 
-        // Floating white capsule badge above building (Image 1 aesthetic)
-        if (b.state !== 'gave_up' && sz >= 20) {
-          const badgeMeta = {
-            library: { icon: '📖', label: 'Library' },
-            school: { icon: '🎓', label: 'School' },
-            classroom: { icon: '🎓', label: 'School' },
-            sports_ground: { icon: '⚽', label: 'Sports' },
-            home: { icon: '🏠', label: 'Homes' },
-            laptop: { icon: '💻', label: 'Laptop' },
-            phone: { icon: '📱', label: 'Phone' },
-            tablet: { icon: '📱', label: 'Tablet' },
-            lab: { icon: '🖥️', label: 'Lab' },
-            computer_lab: { icon: '🖥️', label: 'Lab' },
-            construction: { icon: '🚧', label: 'Site' }
-          };
-          const meta = badgeMeta[b.type] || { icon: '🏫', label: b.name || 'Building' };
-          
-          let label = meta.label;
-          let borderColor = '#38bdf8';
-          let bgColor = '#ffffff';
-
-          if (b.isRogue) {
-            label = 'Rogue (10.99.99.99)';
-            borderColor = '#ef4444';
-            bgColor = '#fef2f2';
-          } else if (isBlueZone) {
-            label = b.type === 'laptop' ? 'Blue Laptop' : `Blue ${meta.label}`;
-            borderColor = '#0284c7';
-            bgColor = '#f0f9ff';
-          } else if (isGreenZone) {
-            label = b.type === 'laptop' ? 'Green Laptop' : `Green ${meta.label}`;
-            borderColor = '#059669';
-            bgColor = '#ecfdf5';
-          } else if (isOrangeZone) {
-            label = b.type === 'laptop' ? 'Orange Laptop' : `Orange ${meta.label}`;
-            borderColor = '#d97706';
-            bgColor = '#fffbeb';
-          }
-
-          const badgeText = b.isRogue
-            ? `🚨  ${label}`
-            : (isBlueZone
-                ? `🔵  ${label}`
-                : (isGreenZone
-                    ? `🟢  ${label}`
-                    : (isOrangeZone
-                        ? `🟠  ${label}`
-                        : `${meta.icon}  ${label}`)));
+        // Tags removed from top of end devices (kept for servers). Alert only for rogue intruder devices.
+        if (b.isRogue && b.state !== 'gave_up' && sz >= 20) {
+          const badgeText = '🚨  Rogue (10.99.99.99)';
           const fontSize = Math.max(9, Math.floor(sz * 0.22));
 
           ctx.save();
@@ -571,13 +526,10 @@ export class CanvasRenderer {
           const badgeX = bx + sz / 2 - badgeW / 2;
           const badgeY = by - badgeH * 0.85;
 
-          // Subtle drop shadow
           ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
           ctx.shadowBlur = 6;
           ctx.shadowOffsetY = 2;
-
-          // White or subtly tinted rounded pill
-          ctx.fillStyle = bgColor;
+          ctx.fillStyle = '#fef2f2';
           ctx.beginPath();
           if (typeof ctx.roundRect === 'function') {
             ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2);
@@ -586,14 +538,12 @@ export class CanvasRenderer {
           }
           ctx.fill();
 
-          // Border
           ctx.shadowColor = 'transparent';
-          ctx.strokeStyle = borderColor;
-          ctx.lineWidth = (isBlueZone || isGreenZone || isOrangeZone) ? 1.6 : 1.2;
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 1.6;
           ctx.stroke();
 
-          // Dark slate text
-          ctx.fillStyle = '#0f172a';
+          ctx.fillStyle = '#991b1b';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(badgeText, bx + sz / 2, badgeY + badgeH / 2);

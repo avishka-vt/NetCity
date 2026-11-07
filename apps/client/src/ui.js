@@ -166,6 +166,18 @@ export class NetCityClientUI {
     this.stateManager.saveCompletedLevels();
   }
 
+  /**
+   * Reset all progress back to a fresh brand-new player state
+   */
+  resetProgress() {
+    this.stateManager.resetProgress();
+    this.completedLevels = this.stateManager.completedLevels;
+    this._campaignView = 'chapters';
+    this._currentViewingCh = 1;
+    this._setScreen('campaign');
+    this._renderCampaignScreen();
+  }
+
   _setScreen(name) {
     if (name === 'learn' && this.currentScreen !== 'learn') {
       this.lastScreenBeforeLearn = {

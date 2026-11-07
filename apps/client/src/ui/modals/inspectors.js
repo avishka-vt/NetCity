@@ -136,7 +136,7 @@ export function renderDevicePortsHtml(ui, device) {
       if (device.type === 'switch') {
         const currentZone = device.portZones ? (device.portZones.get(c.wireId) || '') : '';
         zoneSelector = `
-          <select class="nc-port-zone-select" data-wire-id="${c.wireId}" style="background:#0d1b2a; color:#fff; border:1px solid #415a77; border-radius:4px; font-size:0.75rem; padding:2px 4px; margin-right:6px;">
+          <select class="nc-port-zone-select" data-wire-id="${c.wireId}" style="background:var(--color-surface-subtle); color:#fff; border:1px solid var(--color-border-subtle); border-radius:4px; font-size:0.75rem; padding:2px 4px; margin-right:6px;">
             <option value="" ${currentZone === '' ? 'selected' : ''}>Zone: None</option>
             <option value="blue" ${currentZone === 'blue' ? 'selected' : ''} style="color:#38bdf8;">Zone: Blue</option>
             <option value="green" ${currentZone === 'green' ? 'selected' : ''} style="color:#10b981;">Zone: Green</option>
@@ -146,7 +146,7 @@ export function renderDevicePortsHtml(ui, device) {
       }
 
       portsHtml += `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#1b263b; padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:0.8rem; border-left:3px solid #38bdf8;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface-elevated); padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:0.8rem; border-left:3px solid #38bdf8;">
           <div>
             <strong style="color:#38bdf8;">Port ${i + 1}:</strong> <span>${c.peerIcon} ${c.peerName}</span>
             <div style="font-size:0.72rem; color:#94a3b8;">${WIRE_CATALOG[c.wireType]?.name || c.wireType} &middot; ${c.length}m &middot; $${c.cost}</div>
@@ -159,7 +159,7 @@ export function renderDevicePortsHtml(ui, device) {
       `;
     } else {
       portsHtml += `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#0d1b2a; padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:0.8rem; border:1px dashed #334155;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface-subtle); padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:0.8rem; border:1px dashed #334155;">
           <span style="color:#64748b;"><strong style="color:#94a3b8;">Port ${i + 1}:</strong> <em>Available / Empty</em></span>
         </div>
       `;
@@ -256,7 +256,7 @@ export function showSwitchNotebook(ui, device) {
 
       ${renderDevicePortsHtml(ui, device)}
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <strong style="color:#e2e8f0; font-size:0.82rem;">Loop Guard (Spanning Tree)</strong>
           <div style="font-size:0.72rem; color:#94a3b8;">Blocks redundant loops to prevent broadcast packet storms.</div>
@@ -265,9 +265,9 @@ export function showSwitchNotebook(ui, device) {
       </div>
 
       <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.82rem;">Switch MAC Address Table ("The Notebook")</h4>
-      <table style="width:100%; border-collapse:collapse; font-size:0.8rem; margin-bottom:14px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.8rem; margin-bottom:14px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
         <thead>
-          <tr style="border-bottom:1px solid #415a77; color:#2ec4b6; text-align:left; background:#1b263b;">
+          <tr style="border-bottom:1px solid var(--color-border-subtle); color:#2ec4b6; text-align:left; background:var(--color-surface-elevated);">
             <th style="padding:6px 8px;">Port</th>
             <th style="padding:6px 8px;">Device</th>
             <th style="padding:6px 8px;">MAC Address</th>
@@ -339,7 +339,7 @@ export function showBuildingInspector(ui, b) {
   let ipSection = '';
   if (isIpLevel) {
     ipSection = `
-      <div style="background:#0d1b2a; border:1px solid #415a77; border-radius:6px; padding:12px; margin-bottom:12px;">
+      <div style="background:var(--color-surface-subtle); border:1px solid var(--color-border-subtle); border-radius:6px; padding:12px; margin-bottom:12px;">
         <h4 style="margin:0 0 8px 0; color:#38bdf8; font-size:0.88rem;">🌐 Network Configuration</h4>
         <div style="margin-bottom:8px;">
           <label style="display:block; font-size:0.75rem; color:#94a3b8; margin-bottom:3px;">IP Address:</label>
@@ -355,7 +355,7 @@ export function showBuildingInspector(ui, b) {
         </div>
         <div>
           <label style="display:block; font-size:0.75rem; color:#94a3b8; margin-bottom:3px;">Color / VLAN Zone:</label>
-          <select id="nc-input-zone" class="nc-input" style="background:#0d1b2a; color:#fff; border:1px solid #415a77; border-radius:4px; font-size:0.8rem; padding:4px 6px; width:100%;">
+          <select id="nc-input-zone" class="nc-input" style="background:var(--color-surface-subtle); color:#fff; border:1px solid var(--color-border-subtle); border-radius:4px; font-size:0.8rem; padding:4px 6px; width:100%;">
             <option value="" ${(!b.zone && !b.colorGroup) ? 'selected' : ''}>Normal / None</option>
             <option value="blue" ${(b.zone === 'blue' || b.colorGroup === 'blue') ? 'selected' : ''} style="color:#38bdf8;">🔵 Blue Zone</option>
             <option value="green" ${(b.zone === 'green' || b.colorGroup === 'green') ? 'selected' : ''} style="color:#10b981;">🟢 Green Zone</option>
@@ -369,11 +369,11 @@ export function showBuildingInspector(ui, b) {
   let zoneSection = '';
   if (!isIpLevel && (b.zone !== undefined || b.colorGroup !== undefined || (ui.levelDef && ui.levelDef.chapter >= 5))) {
     zoneSection = `
-      <div style="background:#0d1b2a; border:1px solid #415a77; border-radius:6px; padding:12px; margin-bottom:12px;">
+      <div style="background:var(--color-surface-subtle); border:1px solid var(--color-border-subtle); border-radius:6px; padding:12px; margin-bottom:12px;">
         <h4 style="margin:0 0 8px 0; color:#38bdf8; font-size:0.88rem;">🎨 VLAN / Color Zone</h4>
         <div>
           <label style="display:block; font-size:0.75rem; color:#94a3b8; margin-bottom:3px;">Assigned Zone:</label>
-          <select id="nc-input-zone" class="nc-input" style="background:#0d1b2a; color:#fff; border:1px solid #415a77; border-radius:4px; font-size:0.8rem; padding:4px 6px; width:100%;">
+          <select id="nc-input-zone" class="nc-input" style="background:var(--color-surface-subtle); color:#fff; border:1px solid var(--color-border-subtle); border-radius:4px; font-size:0.8rem; padding:4px 6px; width:100%;">
             <option value="" ${(!b.zone && !b.colorGroup) ? 'selected' : ''}>Normal / None</option>
             <option value="blue" ${(b.zone === 'blue' || b.colorGroup === 'blue') ? 'selected' : ''} style="color:#38bdf8;">🔵 Blue Zone</option>
             <option value="green" ${(b.zone === 'green' || b.colorGroup === 'green') ? 'selected' : ''} style="color:#10b981;">🟢 Green Zone</option>
@@ -388,7 +388,7 @@ export function showBuildingInspector(ui, b) {
   if (hasWire) {
     const isFaded = Boolean(wire && wire.isFaded);
     wireSection = `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#0d1b2a; border:1px solid ${isFaded ? '#ef4444' : '#415a77'}; border-radius:6px; padding:10px 12px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface-subtle); border:1px solid ${isFaded ? '#ef4444' : 'var(--color-border-subtle)'}; border-radius:6px; padding:10px 12px; margin-bottom:12px;">
         <div>
           <div style="color:#ffffff; font-weight:600; font-size:0.85rem;">Connected Cable</div>
           <div style="color:${isFaded ? '#f87171' : '#94a3b8'}; font-size:0.75rem;">${wireTypeLabel} (${wire ? wire.path.length - 1 : 0} squares)${isFaded ? ' ⚠️ Faded' : ''}</div>
@@ -414,7 +414,7 @@ export function showBuildingInspector(ui, b) {
         </div>
       </div>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; margin-bottom:12px; font-size:0.8rem; color:#cbd5e1; display:flex; justify-content:space-between;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; margin-bottom:12px; font-size:0.8rem; color:#cbd5e1; display:flex; justify-content:space-between;">
         <span>Target: <strong style="color:#38bdf8;">${b.targetHostname || (b.targetPort ? `Port ${b.targetPort}` : b.targetName || 'Server')}</strong></span>
         <span>Quota: <strong style="color:#2ec4b6;">${b.fulfilledInCycle} / ${b.quota}</strong></span>
       </div>
@@ -517,7 +517,7 @@ export function showRouterInspector(ui, device) {
         </div>
       </div>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <strong style="color:#e2e8f0; font-size:0.82rem;">Dynamic Routing (RIP Gossip)</strong>
           <div style="font-size:0.72rem; color:#94a3b8;">Exchanges maps every 100 ticks and automatically recalculates alternate paths.</div>
@@ -525,7 +525,7 @@ export function showRouterInspector(ui, device) {
         <input type="checkbox" id="nc-toggle-dynamic-routing" ${device.dynamicRouting ? 'checked' : ''} style="transform:scale(1.2); cursor:pointer;" />
       </div>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <strong style="color:#e2e8f0; font-size:0.82rem;">Network Address Translation (NAT)</strong>
           <div style="font-size:0.72rem; color:#94a3b8;">Translates private internal IPs (192.168.x.x) into a shared public IP.</div>
@@ -534,9 +534,9 @@ export function showRouterInspector(ui, device) {
       </div>
 
       <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.85rem;">Routing Table</h4>
-      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:10px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:10px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
         <thead>
-          <tr style="border-bottom:1px solid #415a77; color:#38bdf8; text-align:left; background:#1b263b;">
+          <tr style="border-bottom:1px solid var(--color-border-subtle); color:#38bdf8; text-align:left; background:var(--color-surface-elevated);">
             <th style="padding:6px 8px;">Destination</th>
             <th style="padding:6px 8px;">Gateway</th>
             <th style="padding:6px 8px;">Type</th>
@@ -557,19 +557,19 @@ export function showRouterInspector(ui, device) {
         </tbody>
       </table>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 10px; margin-bottom:12px; display:flex; gap:6px; align-items:center;">
-        <input type="text" id="nc-input-static-subnet" placeholder="Subnet (e.g. 192.168.30.0/24)" style="flex:1; background:#1b263b; color:#fff; border:1px solid #415a77; border-radius:4px; padding:4px 6px; font-size:0.75rem;" />
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 10px; margin-bottom:12px; display:flex; gap:6px; align-items:center;">
+        <input type="text" id="nc-input-static-subnet" placeholder="Subnet (e.g. 192.168.30.0/24)" style="flex:1; background:var(--color-surface-elevated); color:#fff; border:1px solid var(--color-border-subtle); border-radius:4px; padding:4px 6px; font-size:0.75rem;" />
         <button class="nc-btn nc-btn-primary" id="nc-btn-add-static-route" style="padding:4px 8px; font-size:0.75rem;">Add Route</button>
       </div>
 
       ${allowRulesRows ? `
         <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.85rem;">Inter-VLAN Permission Rules</h4>
-        <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
           <tbody>${allowRulesRows}</tbody>
         </table>
       ` : ''}
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; font-size:0.78rem; color:#94a3b8; margin-bottom:12px;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; font-size:0.78rem; color:#94a3b8; margin-bottom:12px;">
         Max Ports: 4 • Status: Active & Forwarding
       </div>
 
@@ -658,9 +658,9 @@ export function showFirewallInspector(ui, device) {
       </p>
 
       <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.85rem;">Access Control List (Rule Cards)</h4>
-      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
         <thead>
-          <tr style="border-bottom:1px solid #415a77; color:#38bdf8; text-align:left; background:#1b263b;">
+          <tr style="border-bottom:1px solid var(--color-border-subtle); color:#38bdf8; text-align:left; background:var(--color-surface-elevated);">
             <th style="padding:6px 8px;">Action</th>
             <th style="padding:6px 8px;">Source IP</th>
             <th style="padding:6px 8px;">Port</th>
@@ -672,13 +672,13 @@ export function showFirewallInspector(ui, device) {
         </tbody>
       </table>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px; margin-bottom:12px; display:flex; flex-direction:column; gap:8px;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px; margin-bottom:12px; display:flex; flex-direction:column; gap:8px;">
         <div style="display:flex; gap:8px; align-items:center;">
-          <select id="nc-fw-action" style="background:#1b263b; color:#fff; border:1px solid #415a77; border-radius:4px; padding:4px 6px; font-size:0.78rem;">
+          <select id="nc-fw-action" style="background:var(--color-surface-elevated); color:#fff; border:1px solid var(--color-border-subtle); border-radius:4px; padding:4px 6px; font-size:0.78rem;">
             <option value="block">BLOCK</option>
             <option value="allow">ALLOW</option>
           </select>
-          <input type="text" id="nc-fw-ip" placeholder="Source IP (e.g. 10.99.99.99)" value="10.99.99.99" style="flex:1; background:#1b263b; color:#fff; border:1px solid #415a77; border-radius:4px; padding:4px 6px; font-size:0.78rem;" />
+          <input type="text" id="nc-fw-ip" placeholder="Source IP (e.g. 10.99.99.99)" value="10.99.99.99" style="flex:1; background:var(--color-surface-elevated); color:#fff; border:1px solid var(--color-border-subtle); border-radius:4px; padding:4px 6px; font-size:0.78rem;" />
           <button class="nc-btn nc-btn-primary" id="nc-fw-add-btn" style="padding:4px 10px; font-size:0.78rem;">Add Rule</button>
         </div>
         <div style="display:flex; gap:6px; align-items:center; font-size:0.75rem; color:#94a3b8;">
@@ -743,7 +743,7 @@ export function showVpnInspector(ui, device) {
         The VPN Gateway encapsulates network traffic inside an encrypted tunnel across untrusted public networks. Eavesdroppers (Snoop) cannot inspect payload data.
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
         <div style="margin-bottom:6px;">Tunnel Status: <strong style="color:#10b981;">Active & Encrypted (AES-256)</strong></div>
         <div style="margin-bottom:6px;">Encapsulation: <strong style="color:#38bdf8;">IPsec / WireGuard Tunnel</strong></div>
         <div>Payload Protection: <strong style="color:#ffd166;">Snoop-proof</strong></div>
@@ -787,15 +787,15 @@ export function showLoadBalancerInspector(ui, device) {
         The Hardware Load Balancer distributes incoming web requests evenly across server backends. If a server crashes, traffic automatically fails over to healthy nodes!
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:0.8rem; display:flex; justify-content:space-between;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:0.8rem; display:flex; justify-content:space-between;">
         <span>Strategy: <strong style="color:#38bdf8;">Round-Robin</strong></span>
         <span>Health Check: <strong style="color:#10b981;">Active Probe (TCP/80)</strong></span>
       </div>
 
       <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.85rem;">Backend Server Cluster</h4>
-      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
         <thead>
-          <tr style="border-bottom:1px solid #415a77; color:#38bdf8; text-align:left; background:#1b263b;">
+          <tr style="border-bottom:1px solid var(--color-border-subtle); color:#38bdf8; text-align:left; background:var(--color-surface-elevated);">
             <th style="padding:6px 8px;">Node Name</th>
             <th style="padding:6px 8px;">IP Address</th>
             <th style="padding:6px 8px;">Health Status</th>
@@ -831,7 +831,7 @@ export function showBackupPowerInspector(ui, device) {
         The Uninterruptible Power Supply (UPS) provides emergency battery backup during municipal power cuts, preventing switches and routers from going dark.
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
         <div style="margin-bottom:6px;">Battery State: <strong style="color:#10b981;">100% Charged</strong></div>
         <div style="margin-bottom:6px;">Runtime: <strong style="color:#ffd166;">3,600 ticks</strong></div>
         <div>Inverter Status: <strong style="color:#38bdf8;">Online & Ready</strong></div>
@@ -888,15 +888,15 @@ export function showDhcpInspector(ui, device) {
         The DHCP server automatically hands out IP addresses and default gateways to computers as they open!
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:0.8rem; display:flex; justify-content:space-between;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:0.8rem; display:flex; justify-content:space-between;">
         <span>IP Pool: <strong style="color:#38bdf8;">192.168.1.100 - .200</strong></span>
         <span>Gateway: <strong style="color:#ffd166;">192.168.1.1</strong></span>
       </div>
 
       <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.85rem;">Active Leases Table</h4>
-      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
         <thead>
-          <tr style="border-bottom:1px solid #415a77; color:#38bdf8; text-align:left; background:#1b263b;">
+          <tr style="border-bottom:1px solid var(--color-border-subtle); color:#38bdf8; text-align:left; background:var(--color-surface-elevated);">
             <th style="padding:6px 8px;">Client MAC</th>
             <th style="padding:6px 8px;">Leased IP</th>
             <th style="padding:6px 8px;">Status</th>
@@ -948,9 +948,9 @@ export function showDnsInspector(ui, device) {
       </p>
 
       <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.85rem;">Zone Records Table</h4>
-      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:#0d1b2a; border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.78rem; margin-bottom:12px; background:var(--color-surface-subtle); border-radius:6px; overflow:hidden;">
         <thead>
-          <tr style="border-bottom:1px solid #415a77; color:#a78bfa; text-align:left; background:#1b263b;">
+          <tr style="border-bottom:1px solid var(--color-border-subtle); color:#a78bfa; text-align:left; background:var(--color-surface-elevated);">
             <th style="padding:6px 8px;">Domain Name</th>
             <th style="padding:6px 8px;">Type</th>
             <th style="padding:6px 8px;">Target IP</th>
@@ -1015,7 +1015,7 @@ export function showWebServerInspector(ui, device) {
         Hosts web pages and serves HTTP requests. Generates reply packets back to requesting clients!
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
         <div style="margin-bottom:6px;">Hostname: <strong style="color:#38bdf8;">school.net</strong></div>
         <div style="margin-bottom:6px;">IP Address: <code style="color:#ffd166;">192.168.2.50</code></div>
         <div>Open Ports: <span style="background:#1e293b; color:#34d399; padding:2px 6px; border-radius:4px; font-family:monospace;">Port 80 (HTTP)</span></div>
@@ -1061,7 +1061,7 @@ export function showEmailServerInspector(ui, device) {
         Store-and-forward depot for electronic messages between school branches.
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
         <div style="margin-bottom:6px;">Hostname: <strong style="color:#38bdf8;">mail.school.net</strong></div>
         <div style="margin-bottom:6px;">IP Address: <code style="color:#ffd166;">192.168.2.55</code></div>
         <div>Open Ports: <span style="background:#1e293b; color:#34d399; padding:2px 6px; border-radius:4px; font-family:monospace;">Port 25 (SMTP)</span></div>
@@ -1108,7 +1108,7 @@ export function showDeviceInspector(ui, device) {
         ${spec.concept || 'Network distribution hardware.'}
       </p>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
         <div style="margin-bottom:6px;">Type: <strong style="color:#ffffff;">${spec.name}</strong></div>
         <div style="margin-bottom:6px;">Capacity: <strong style="color:#38bdf8;">${device.ports || 4} ports</strong></div>
         <div>Uplink Status: <strong style="color:${hasWire ? '#10b981' : '#f59e0b'};">${hasWire ? 'Connected' : 'Unwired'}</strong></div>
@@ -1151,7 +1151,7 @@ export function showServerInspector(ui, server) {
         </div>
       </div>
 
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
         <div style="margin-bottom:6px;">Hostname: <strong style="color:#38bdf8;">${server.hostname || 'server.school.net'}</strong></div>
         <div style="margin-bottom:6px;">IP Address: <code style="color:#ffd166;">${server.ip || '192.168.2.50'}</code></div>
         <div>Open Services: <span style="background:#1e293b; color:#34d399; padding:2px 6px; border-radius:4px; font-family:monospace;">Ports: ${(server.portsOpen || [80]).join(', ')}</span></div>
@@ -1204,7 +1204,7 @@ export function showWireInspector(ui, wire) {
       <h2 class="nc-card-title" style="margin-bottom:8px; color:${spec?.color || '#38bdf8'}; display:flex; align-items:center; gap:8px;">
         <span>🧵</span> Cable Inspector
       </h2>
-      <div style="background:#0d1b2a; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.82rem;">
+      <div style="background:var(--color-surface-subtle); border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.82rem;">
         <div style="margin-bottom:6px;">Type: <strong style="color:${spec?.color || '#ffd166'};">${spec?.name || wire.wireType}</strong></div>
         <div style="margin-bottom:6px;">Route: <strong style="color:#ffffff;">${fromLabel} &rarr; ${toLabel}</strong></div>
         <div style="margin-bottom:6px;">Length: <strong style="color:${wire.isFaded ? '#f87171' : '#38bdf8'};">${wire.length} squares (${wire.length * 10}m)${wire.isFaded ? ' ⚠️ (Exceeds ' + (spec?.maxRunSquares || 10) + ' max)' : ''}</strong></div>

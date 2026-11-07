@@ -104,4 +104,16 @@ export class StateManager {
     this.completedLevels.add(levelId);
     this.saveCompletedLevels();
   }
+
+  /**
+   * Reset all user progression back to a brand new game state
+   */
+  resetProgress() {
+    this.completedLevels.clear();
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (e) {}
+  }
 }

@@ -267,3 +267,76 @@ test('Learn Screen Back Navigation: Returns to exact previous page (game, endles
     globalThis.document = prevDoc;
   }
 });
+
+test('Campaign Screen Redesign: Horizontal scrolling road map across glowing pedestals, action-oriented titles, silhouettes & test out', () => {
+  const mockDOM = createMockDOM();
+  const prevWindow = globalThis.window;
+  const prevDoc = globalThis.document;
+  const prevRaf = globalThis.requestAnimationFrame;
+  const prevCaf = globalThis.cancelAnimationFrame;
+
+  globalThis.window = mockDOM.window;
+  globalThis.document = mockDOM.document;
+  globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 16);
+  globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
+
+  try {
+    const container = mockDOM.document.createElement('div');
+    container.id = 'netcity-app';
+    mockDOM.document.body.appendChild(container);
+
+    const ui = new NetCityClientUI(container, { initialLevel: null, testMode: false });
+    const campaignHtml = ui.screenCampaignEl.innerHTML;
+
+    // 1. Horizontal scrolling path container and winding node wrappers
+    assert.ok(campaignHtml.includes('nc-horizontal-path'), 'Must have horizontal path container');
+    assert.ok(campaignHtml.includes('nc-path-node-wrapper'), 'Must have path node wrappers for horizontal journey map');
+    assert.ok(campaignHtml.includes('nc-stepping-stone'), 'Must have stepping stone connector dots');
+
+    // 2. Kid-friendly achievement titles and preserved technical subtitles
+    assert.ok(campaignHtml.includes('Wire Your First Classroom'), 'Ch 1 title must be achievement-based');
+    assert.ok(campaignHtml.includes('The Basics: Physical Cables & Wires'), 'Ch 1 jargon subtitle must be preserved');
+    assert.ok(campaignHtml.includes('Connect the Whole School'), 'Ch 2 title must be achievement-based');
+    assert.ok(campaignHtml.includes('IP Addresses: Hubs, Switches & MAC'), 'Ch 2 jargon subtitle must be preserved');
+    assert.ok(campaignHtml.includes('Bridge Across the River'), 'Ch 3 title must be achievement-based');
+    assert.ok(campaignHtml.includes('Make Packets Find Their Way'), 'Ch 4 title must be achievement-based');
+    assert.ok(campaignHtml.includes('Organise the City Zones'), 'Ch 5 title must be achievement-based');
+    assert.ok(campaignHtml.includes('Guard the City Gates'), 'Ch 6 title must be achievement-based');
+    assert.ok(campaignHtml.includes('Build the Unstoppable Metropolis'), 'Ch 7 title must be achievement-based');
+
+    // 3. Locked chapters feature mystery silhouettes, teaser quotes, and "⚡ Test Out" button
+    assert.ok(campaignHtml.includes('nc-silhouette'), 'Locked chapters must render silhouettes');
+    assert.ok(campaignHtml.includes('Chapter 4: Make packets find their way'), 'Chapter 4 teaser preview quote must exist');
+    assert.ok(campaignHtml.includes('nc-btn-test-out'), 'Locked chapters must offer Test Out button');
+    assert.ok(campaignHtml.includes('Test Out'), 'Button text must say Test Out');
+
+    // 4. Clicking "⚡ Test Out" opens chapter with Test Out banner & Capstone Challenge jump
+    const testOutBtns = ui.screenCampaignEl.querySelectorAll('.nc-btn-test-out');
+    assert.ok(testOutBtns.length > 0, 'Must have test out buttons for locked chapters');
+    const ch4TestOutBtn = Array.from(testOutBtns).find(b => b.getAttribute('data-ch') === '4') || testOutBtns[0];
+    
+    ch4TestOutBtn.onclick({ stopPropagation: () => {}, target: ch4TestOutBtn, closest: () => ch4TestOutBtn });
+    assert.equal(ui._campaignView, 'chapter_levels', 'Clicking Test Out must open levels view');
+    assert.equal(ui._currentViewingCh, 4, 'Must view Chapter 4');
+    assert.equal(ui._isTestOutMode, true, 'Test out mode must be active');
+
+    const chLevelsHtml = ui.screenCampaignEl.innerHTML;
+    assert.ok(chLevelsHtml.includes('nc-test-out-banner'), 'Level selection view must display Test Out banner');
+    assert.ok(chLevelsHtml.includes('Capstone Challenge'), 'Banner must mention Capstone Challenge');
+    assert.ok(chLevelsHtml.includes('Take Capstone Challenge ⚡'), 'Banner must have action button to jump directly to Capstone');
+
+    // 5. Reset progress functionality
+    ui.completedLevels.add('1.1');
+    ui.completedLevels.add('1.2');
+    ui.resetProgress();
+    assert.equal(ui.completedLevels.size, 0, 'Reset progress must clear all completed levels');
+    assert.equal(ui._currentViewingCh, 1, 'Reset progress must return to Chapter 1');
+
+    ui.destroy();
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDoc;
+    globalThis.requestAnimationFrame = prevRaf;
+    globalThis.cancelAnimationFrame = prevCaf;
+  }
+});

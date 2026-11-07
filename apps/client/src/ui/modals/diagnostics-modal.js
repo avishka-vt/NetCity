@@ -19,18 +19,18 @@ export function showDiagnosticsModal(ui) {
   }
 
   ui.modalEl.innerHTML = `
-    <div class="nc-card" style="max-width:540px; text-align:left;">
-      <h2 class="nc-card-title" style="margin-bottom:6px; color:#38bdf8; display:flex; align-items:center; gap:8px;">
+    <div class="nc-card" style="max-width:580px; text-align:left;">
+      <h2 class="nc-card-title" style="margin-bottom:var(--space-2); color:var(--color-cyan); display:flex; align-items:center; gap:var(--space-2);">
         <span>🔍</span> Network Detective: Test & Trace
       </h2>
-      <p style="color:#94a3b8; font-size:0.8rem; margin-bottom:12px; line-height:1.4;">
+      <p style="color:var(--color-text-secondary); font-size:var(--font-size-sm); margin-bottom:var(--space-4); line-height:1.5;">
         Troubleshooting is a method, not a guess. Follow Bit's checklist step-by-step from device outward to isolate faults!
       </p>
 
       <!-- Bit's Diagnostic Checklist -->
-      <div style="background:#0d1b2a; border:1px solid #415a77; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.8rem;">
-        <h4 style="margin:0 0 6px 0; color:#cbd5e1; font-size:0.82rem;">Bit's Troubleshooting Checklist:</h4>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; color:#94a3b8; font-size:0.75rem;">
+      <div style="background:var(--color-surface-subtle); border:1px solid var(--color-border-subtle); border-radius:var(--radius-md); padding:var(--space-3) var(--space-4); margin-bottom:var(--space-4); font-size:var(--font-size-sm);">
+        <h4 style="margin:0 0 var(--space-2) 0; color:var(--color-text-primary); font-size:var(--font-size-sm);">Bit's Troubleshooting Checklist:</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); color:var(--color-text-secondary); font-size:var(--font-size-xs);">
           <div>1. 🔌 Is physical cable connected?</div>
           <div>2. 🌐 Is IP address configured?</div>
           <div>3. 🧭 Is default gateway correct?</div>
@@ -40,31 +40,31 @@ export function showDiagnosticsModal(ui) {
         </div>
       </div>
 
-      <div style="display:flex; gap:10px; margin-bottom:12px;">
+      <div style="display:flex; gap:var(--space-3); margin-bottom:var(--space-4);">
         <div style="flex:1;">
-          <label style="display:block; font-size:0.75rem; color:#94a3b8; margin-bottom:3px;">From Device:</label>
-          <select id="nc-diag-from" style="width:100%; background:#1b263b; color:#fff; border:1px solid #415a77; border-radius:4px; padding:6px; font-size:0.78rem;">
+          <label style="display:block; font-size:var(--font-size-xs); font-weight:700; color:var(--color-text-secondary); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">From Device:</label>
+          <select id="nc-diag-from" style="width:100%; background:var(--color-surface-elevated); color:var(--color-text-primary); border:1px solid var(--color-border-subtle); border-radius:var(--radius-md); padding:8px 10px; font-size:var(--font-size-sm); font-family:var(--font-sans);">
             ${buildingOptions}
           </select>
         </div>
         <div style="flex:1;">
-          <label style="display:block; font-size:0.75rem; color:#94a3b8; margin-bottom:3px;">To Server:</label>
-          <select id="nc-diag-to" style="width:100%; background:#1b263b; color:#fff; border:1px solid #415a77; border-radius:4px; padding:6px; font-size:0.78rem;">
+          <label style="display:block; font-size:var(--font-size-xs); font-weight:700; color:var(--color-text-secondary); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">To Server:</label>
+          <select id="nc-diag-to" style="width:100%; background:var(--color-surface-elevated); color:var(--color-text-primary); border:1px solid var(--color-border-subtle); border-radius:var(--radius-md); padding:8px 10px; font-size:var(--font-size-sm); font-family:var(--font-sans);">
             ${serverOptions}
           </select>
         </div>
       </div>
 
-      <div class="nc-card-actions" style="justify-content:flex-start; margin-bottom:12px; gap:8px;">
+      <div class="nc-card-actions" style="justify-content:flex-start; margin-bottom:var(--space-4); gap:var(--space-3);">
         <button class="nc-btn nc-btn-primary" id="nc-btn-run-ping">Send Test Message (Ping)</button>
         <button class="nc-btn nc-btn-secondary" id="nc-btn-run-trace">Packet Trace (Hop-by-Hop)</button>
       </div>
 
-      <div id="nc-diag-results" style="background:#09121d; border-radius:6px; padding:10px; min-height:80px; font-family:monospace; font-size:0.78rem; color:#e2e8f0; max-height:160px; overflow-y:auto;">
+      <div id="nc-diag-results" style="background:rgba(4, 9, 24, 0.9); border:1px solid var(--color-border-subtle); border-radius:var(--radius-md); padding:var(--space-3) var(--space-4); min-height:80px; font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-primary); max-height:160px; overflow-y:auto; line-height:1.6;">
         Select source and destination, then click Send Test Message or Packet Trace.
       </div>
 
-      <div class="nc-card-actions" style="margin-top:12px;">
+      <div class="nc-card-actions" style="margin-top:var(--space-4);">
         <button class="nc-btn nc-btn-secondary" id="nc-modal-close">Close</button>
       </div>
     </div>

@@ -178,8 +178,9 @@ export function generateLevelMap(levelId, seed, customDef = null) {
     });
   }
 
-  // Wall generation (Bug N fix) — seeded rectangular obstacle blocks
+  // Wall/Pond generation — seeded rectangular obstacle blocks
   const walls = [];
+  const wallBlocks = [];
   const wallCount = levelDef.walls || 0;
   const serverX = serverSquare % w;
   const serverY = Math.floor(serverSquare / w);
@@ -215,6 +216,13 @@ export function generateLevelMap(levelId, seed, customDef = null) {
 
       if (!conflicts && candidates.length > 0) {
         for (const sq of candidates) walls.push(sq);
+        wallBlocks.push({
+          x: bx,
+          y: by,
+          w: bw,
+          h: bh,
+          shape: `${bw}x${bh}`
+        });
         break;
       }
     }
@@ -231,6 +239,7 @@ export function generateLevelMap(levelId, seed, customDef = null) {
     server: serverSquare,
     servers: servers || undefined,
     walls,
+    wallBlocks,
     noisySquares: levelDef.noisySquares || [],
     snoopSquares: levelDef.snoopSquares || [],
     startingCoins: levelDef.coins,

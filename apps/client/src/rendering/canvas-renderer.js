@@ -82,13 +82,50 @@ export class CanvasRenderer {
         }
       }
 
-      // 1.7. Walls (solid obstacle blocks)
-      if (sim.walls) {
-        ctx.fillStyle = '#334155';
+      // 1.7. Ponds & Obstacles (replacing walls/grey grids with shapes 1-6)
+      if (sim.walls && sim.walls.size > 0) {
+        const renderedSquares = new Set();
+        const blocks = (sim.wallBlocks && sim.wallBlocks.length > 0)
+          ? sim.wallBlocks
+          : this._detectWallBlocks(sim.walls, sim.width, sim.height);
+
+        for (const block of blocks) {
+          const imgKey = `terrain/pond_${block.shape}`;
+          const img = this.assets ? this.assets.get(imgKey) : null;
+          const bx = block.x * sz;
+          const by = block.y * sz;
+          const bw = block.w * sz;
+          const bh = block.h * sz;
+
+          for (let dy = 0; dy < block.h; dy++) {
+            for (let dx = 0; dx < block.w; dx++) {
+              renderedSquares.add((block.y + dy) * sim.width + (block.x + dx));
+            }
+          }
+
+          if (img) {
+            // Draw stylized organic pond with soft natural bleed over grid lines
+            const bleedX = Math.round(sz * 0.08);
+            const bleedY = Math.round(sz * 0.08);
+            ctx.drawImage(img, bx - bleedX, by - bleedY, bw + bleedX * 2, bh + bleedY * 2);
+          } else {
+            this._drawVectorPondFallback(ctx, bx, by, bw, bh);
+          }
+        }
+
+        // Fallback for any standalone squares in sim.walls not covered by a block
         for (const sq of sim.walls) {
-          const wx = (sq % sim.width) * sz;
-          const wy = Math.floor(sq / sim.width) * sz;
-          ctx.fillRect(wx + 1, wy + 1, sz - 2, sz - 2);
+          if (!renderedSquares.has(sq)) {
+            const wx = (sq % sim.width) * sz;
+            const wy = Math.floor(sq / sim.width) * sz;
+            const img1 = this.assets ? this.assets.get('terrain/pond_1x1') : null;
+            if (img1) {
+              const bleed = Math.round(sz * 0.08);
+              ctx.drawImage(img1, wx - bleed, wy - bleed, sz + bleed * 2, sz + bleed * 2);
+            } else {
+              this._drawVectorPondFallback(ctx, wx, wy, sz, sz);
+            }
+          }
         }
       }
 
@@ -696,5 +733,110 @@ export class CanvasRenderer {
     } catch (err) {
       console.error('Render error:', err);
     }
+  }
+
+  /**
+   * Decompose arbitrary wall squares into standard rectangular block shapes (3x2, 2x2, 3x1, 1x2, 2x1, 1x1)
+   */
+  _detectWallBlocks(wallsSet, width, height) {
+    if (!wallsSet || wallsSet.size === 0) return [];
+    const remaining = new Set(wallsSet);
+    const blocks = [];
+
+    // Prioritize larger shapes: 3x2, 2x2, 3x1, 1x2, 2x1, 1x1
+    const candidateShapes = [
+      { w: 3, h: 2, shape: '3x2' },
+      { w: 2, h: 2, shape: '2x2' },
+      { w: 3, h: 1, shape: '3x1' },
+      { w: 1, h: 2, shape: '1x2' },
+      { w: 2, h: 1, shape: '2x1' },
+      { w: 1, h: 1, shape: '1x1' }
+    ];
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const sq = y * width + x;
+        if (!remaining.has(sq)) continue;
+
+        let matched = false;
+        for (const s of candidateShapes) {
+          if (x + s.w > width || y + s.h > height) continue;
+          let allPresent = true;
+          for (let dy = 0; dy < s.h; dy++) {
+            for (let dx = 0; dx < s.w; dx++) {
+              if (!remaining.has((y + dy) * width + (x + dx))) {
+                allPresent = false;
+                break;
+              }
+            }
+            if (!allPresent) break;
+          }
+
+          if (allPresent) {
+            for (let dy = 0; dy < s.h; dy++) {
+              for (let dx = 0; dx < s.w; dx++) {
+                remaining.delete((y + dy) * width + (x + dx));
+              }
+            }
+            blocks.push({ x, y, w: s.w, h: s.h, shape: s.shape });
+            matched = true;
+            break;
+          }
+        }
+
+        if (!matched && remaining.has(sq)) {
+          remaining.delete(sq);
+          blocks.push({ x, y, w: 1, h: 1, shape: '1x1' });
+        }
+      }
+    }
+    return blocks;
+  }
+
+  /**
+   * Stylized organic vector pond fallback when raster images are loading or in mock environments
+   */
+  _drawVectorPondFallback(ctx, x, y, w, h) {
+    ctx.save();
+    const r = Math.min(10, Math.min(w, h) * 0.22);
+
+    // Sandy stone border
+    ctx.fillStyle = '#ca8a04';
+    if (typeof ctx.roundRect === 'function') {
+      ctx.beginPath();
+      ctx.roundRect(x + 1, y + 1, w - 2, h - 2, r);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+    }
+
+    // Azure blue water
+    ctx.fillStyle = '#0284c7';
+    const inset = Math.max(3, Math.min(w, h) * 0.12);
+    const innerR = Math.max(2, r - 2);
+    if (typeof ctx.roundRect === 'function') {
+      ctx.beginPath();
+      ctx.roundRect(x + inset, y + inset, w - inset * 2, h - inset * 2, innerR);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x + inset, y + inset, w - inset * 2, h - inset * 2);
+    }
+
+    // Water ripple highlight
+    ctx.fillStyle = '#38bdf8';
+    const ripW = Math.max(4, Math.floor(w * 0.35));
+    const ripH = Math.max(1, Math.floor(h * 0.08));
+    ctx.fillRect(x + inset + 2, y + Math.floor(h * 0.45), ripW, ripH);
+
+    // Green lily pad
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    const lcx = x + w * 0.38;
+    const lcy = y + h * 0.42;
+    const lr = Math.min(7, Math.min(w, h) * 0.14);
+    ctx.arc(lcx, lcy, lr, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
   }
 }

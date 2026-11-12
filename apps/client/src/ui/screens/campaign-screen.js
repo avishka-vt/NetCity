@@ -567,6 +567,8 @@ export class CampaignScreen {
           ui._campaignView = 'chapter_levels';
           ui._currentViewingCh = chNum;
           ui._isTestOutMode = isTestOut;
+          ui._selectedLevelId = null;
+          ui._userExplicitlySelectedLevel = false;
           ui._renderCampaignScreen();
         }
       };
@@ -595,11 +597,13 @@ export class CampaignScreen {
 
     // Determine the active level in this chapter
     const firstUncompleted = ch.levels.find(l => !ui.completedLevels || !ui.completedLevels.has(l.id));
-    const activeLevelId = firstUncompleted ? firstUncompleted.id : (ch.levels[0]?.id || '1.1');
+    const activeLevelId = firstUncompleted ? firstUncompleted.id : (ch.levels[ch.levels.length - 1]?.id || '1.1');
     const lastLevel = ch.levels[ch.levels.length - 1];
 
-    // Selected level defaults to activeLevelId if not set or not in current chapter
+    // Selected level defaults to activeLevelId unless the user explicitly clicked a different node in this view session
     if (!ui._selectedLevelId || !ch.levels.some(l => l.id === ui._selectedLevelId)) {
+      ui._selectedLevelId = activeLevelId;
+    } else if (!ui._userExplicitlySelectedLevel) {
       ui._selectedLevelId = activeLevelId;
     }
     const selectedLevel = ch.levels.find(l => l.id === ui._selectedLevelId) || ch.levels[0];
@@ -611,6 +615,13 @@ export class CampaignScreen {
     const selectedVisual = getLevelVisualMeta(selectedLevel, selectedIndex >= 0 ? selectedIndex : 0, totalLevels);
     const selectedIsCompleted = Boolean(ui.completedLevels && ui.completedLevels.has(selectedLevel.id));
 
+    // Chapter completion check: final level in chapter completed or all levels completed
+    const isFinalLevelCompleted = Boolean(lastLevel && ui.completedLevels && ui.completedLevels.has(lastLevel.id));
+    const isChapterFinished = Boolean(
+      isFinalLevelCompleted ||
+      (totalLevels > 0 && ch.levels.every(l => ui.completedLevels && ui.completedLevels.has(l.id)))
+    );
+
     // 1. Build Smooth Cable Paths with Mini Motorways Animated Packets
     let cablesSvgHtml = '';
     for (let i = 0; i < totalLevels - 1; i++) {
@@ -620,7 +631,7 @@ export class CampaignScreen {
       const lvlB = ch.levels[i + 1];
 
       const isACompleted = Boolean(ui.completedLevels && ui.completedLevels.has(lvlA.id));
-      const isReached = isACompleted; // Connection is active/flowed if source is completed
+      const isReached = isChapterFinished || isACompleted; // All connected if chapter finished, or if source is completed
 
       const yOff = 14;
       const p1x = p1.x;
@@ -675,7 +686,7 @@ export class CampaignScreen {
       const isCompleted = Boolean(ui.completedLevels && ui.completedLevels.has(lvl.id));
       const isActive = lvl.id === activeLevelId;
       const isSelected = lvl.id === ui._selectedLevelId;
-      const isLocked = !isCompleted && !isActive;
+      const isLocked = !isChapterFinished && (!isCompleted && !isActive);
       const visual = getLevelVisualMeta(lvl, idx, totalLevels);
       const isFinale = visual.isFinale;
 
@@ -698,21 +709,42 @@ export class CampaignScreen {
 
       const topFill = isFinale
         ? 'url(#ncHexFinaleGrad)'
-        : (isCompleted
+        : ((isCompleted || isChapterFinished)
             ? (idx === 1 && ch.num === 1 ? 'url(#ncHexCopperGrad)' : 'url(#ncHexCompletedGrad)')
             : (isActive ? 'url(#ncHexActiveGrad)' : 'url(#ncHexLockedGrad)'));
 
       const strokeColor = isFinale
         ? '#fbbf24'
-        : (isCompleted
+        : ((isCompleted || isChapterFinished)
             ? (idx === 1 && ch.num === 1 ? '#f59e0b' : '#00f0ff')
             : (isActive ? '#00f0ff' : 'rgba(148, 163, 184, 0.3)'));
 
       const strokeWidth = (isActive || isSelected) ? '3' : '2';
 
-      // Status indicator on pedestal
+      // Status indicator on pedestal: Glowing Orb when chapter is finished (no checkmarks!), checkmark during progression
       let badgeSvg = '';
-      if (isCompleted) {
+      if (isChapterFinished) {
+        // Glowing Data Energy Orb (no checkmarks on individual nodes!)
+        badgeSvg = `
+          <g transform="translate(${p.x}, ${p.y + hh + 6})" class="nc-glowing-orb-group">
+            <!-- Pulsing Energy Aura -->
+            <circle r="15" fill="url(#ncOrbHaloGrad)">
+              <animate attributeName="r" values="12;16;12" dur="2.4s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.45;0.95;0.45" dur="2.4s" repeatCount="indefinite" />
+            </circle>
+            <!-- Orbiting Data Particle Dash Ring -->
+            <circle r="11" fill="none" stroke="#00f0ff" stroke-width="1.2" stroke-dasharray="3, 3" opacity="0.8">
+              <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite" />
+            </circle>
+            <!-- Luminous Glowing Core Orb -->
+            <circle r="8.5" fill="url(#ncOrbCoreGrad)" stroke="#ffffff" stroke-width="1.2" filter="url(#ncBadgeGlow)">
+              <animate attributeName="r" values="8;9;8" dur="2.4s" repeatCount="indefinite" />
+            </circle>
+            <!-- Specular Light Reflection Glint -->
+            <circle cx="-2.5" cy="-2.5" r="2.2" fill="#ffffff" opacity="0.95" />
+          </g>
+        `;
+      } else if (isCompleted) {
         badgeSvg = `
           <g transform="translate(${p.x}, ${p.y + hh + 6})">
             <circle r="11" fill="#10b981" stroke="#ffffff" stroke-width="2" filter="url(#ncBadgeGlow)" />
@@ -737,7 +769,8 @@ export class CampaignScreen {
       }
 
       // Base Halo Ring for Active / Selected
-      const haloSvg = (isActive || isSelected) ? `
+      const showHalo = isSelected || (isActive && !isChapterFinished);
+      const haloSvg = showHalo ? `
         <ellipse cx="${p.x}" cy="${p.y + hh}" rx="${hw + 14}" ry="${Math.round(hh * 0.55) + 6}" fill="none" stroke="#00f0ff" stroke-width="3" filter="url(#ncHaloGlow)">
           <animate attributeName="opacity" values="0.75;1;0.75" dur="2s" repeatCount="indefinite" />
         </ellipse>
@@ -811,13 +844,19 @@ export class CampaignScreen {
       `;
 
       // HTML Interactive Node (supports test queries and direct clicking)
-      const statusBadgeHtml = isCompleted 
-        ? '<span class="nc-status-check">✓</span>' 
-        : (isActive ? '<span class="nc-badge-active-dot"></span>' : '');
+      const statusBadgeHtml = isChapterFinished
+        ? '<span class="nc-status-orb"></span>'
+        : (isCompleted 
+            ? '<span class="nc-status-check">✓</span>' 
+            : (isActive ? '<span class="nc-badge-active-dot"></span>' : ''));
+
+      const pillClass = isChapterFinished
+        ? 'chapter-cleared'
+        : (isActive ? 'active' : (isCompleted ? 'completed' : (isLocked ? 'locked' : '')));
 
       nodesHtml += `
-        <div class="nc-level-node nc-level-card ${isActive ? 'nc-level-card-active' : ''} ${isCompleted ? 'nc-level-card-completed' : ''} ${isLocked ? 'nc-level-card-locked' : ''} ${isSelected ? 'nc-level-card-selected' : ''}" data-id="${lvl.id}" style="left: ${p.x}px; top: ${p.y}px;" title="Level ${lvl.id}: ${lvl.title}">
-          <div class="nc-node-pill ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}">
+        <div class="nc-level-node nc-level-card ${isActive ? 'nc-level-card-active' : ''} ${(isCompleted || isChapterFinished) ? 'nc-level-card-completed' : ''} ${isLocked ? 'nc-level-card-locked' : ''} ${isSelected ? 'nc-level-card-selected' : ''}" data-id="${lvl.id}" style="left: ${p.x}px; top: ${p.y}px;" title="Level ${lvl.id}: ${lvl.title}">
+          <div class="nc-node-pill ${pillClass}">
             <span class="nc-node-pill-num">${lvl.id}</span>
             <span class="nc-node-pill-title">${visual.label}</span>
           </div>
@@ -841,13 +880,13 @@ export class CampaignScreen {
             <p class="nc-popover-desc">${selectedLevel.learningMoment || selectedLevel.objective || selectedLevel.concept || 'Connect devices and meet delivery quotas before timer expires.'}</p>
           </div>
         </div>
-        <button class="nc-level-play-btn nc-popover-play-btn ${selectedIsCompleted ? '' : 'nc-btn-continue-level'}" data-id="${selectedLevel.id}">
-          <span>${selectedIsCompleted ? '↺ Replay Level  ›' : '🔍 Trace Route  ›'}</span>
+        <button class="nc-level-play-btn nc-popover-play-btn ${(selectedIsCompleted || isChapterFinished) ? '' : 'nc-btn-continue-level'}" data-id="${selectedLevel.id}">
+          <span>${(selectedIsCompleted || isChapterFinished) ? '↺ Replay Level  ›' : '🔍 Trace Route  ›'}</span>
         </button>
       </div>
     `;
 
-    const testOutBannerHtml = (ui._isTestOutMode && lastLevel) ? `
+    const testOutBannerHtml = (ui._isTestOutMode && lastLevel && !isChapterFinished) ? `
       <div class="nc-test-out-banner" style="position: absolute; top: 16px; right: 32px; z-index: 30; margin: 0; max-width: 440px;">
         <div class="nc-test-out-banner-icon">⚡</div>
         <div class="nc-test-out-banner-text" style="font-size: 0.84rem;">
@@ -893,7 +932,7 @@ export class CampaignScreen {
         <div class="nc-map-header-overlay">
           <button class="nc-btn-back-chapters" id="nc-btn-back-chapters">← Back to Campaign</button>
           <div class="nc-chapter-banner-info">
-            <div class="nc-chapter-pill">CHAPTER ${ch.num} • ${ch.levels.length} LEVELS</div>
+            <div class="nc-chapter-pill">CHAPTER ${ch.num} • ${ch.levels.length} LEVELS${isChapterFinished ? ' • ALL CONNECTED ⚡' : ''}</div>
             <h1 class="nc-chapter-banner-title" style="font-size: 1.45rem; margin: 0; line-height: 1.25;">
               ${ch.title}${cleanSubtitle ? `: <span class="nc-chapter-banner-subtitle">${cleanSubtitle}</span>` : ''}
             </h1>
@@ -987,6 +1026,19 @@ export class CampaignScreen {
                   <stop offset="0%" stop-color="#0c2242" stop-opacity="0.85" />
                   <stop offset="100%" stop-color="#030b18" stop-opacity="0.95" />
                 </linearGradient>
+
+                <!-- Glowing Energy Orb Gradients (Victory / Cleared Network) -->
+                <radialGradient id="ncOrbCoreGrad" cx="35%" cy="32%" r="65%">
+                  <stop offset="0%" stop-color="#ffffff" />
+                  <stop offset="30%" stop-color="#a5f3fc" />
+                  <stop offset="65%" stop-color="#00f0ff" />
+                  <stop offset="100%" stop-color="#0284c7" />
+                </radialGradient>
+                <radialGradient id="ncOrbHaloGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.8" />
+                  <stop offset="60%" stop-color="#38bdf8" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0" />
+                </radialGradient>
               </defs>
 
               <!-- Deep Cosmic Background Surface -->
@@ -1052,12 +1104,14 @@ export class CampaignScreen {
       backBtn.onclick = () => {
         ui._campaignView = 'chapters';
         ui._isTestOutMode = false;
+        ui._selectedLevelId = null;
+        ui._userExplicitlySelectedLevel = false;
         ui._renderCampaignScreen();
       };
     }
 
     // Node click handlers: select node and reposition popover; double-click loads level
-    ui.screenCampaignEl.querySelectorAll('.nc-level-node, .nc-level-card').forEach(nodeEl => {
+    ui.screenCampaignEl.querySelectorAll('.nc-level-node, .nc-level-card, .nc-svg-pedestal').forEach(nodeEl => {
       nodeEl.onclick = (e) => {
         e.stopPropagation();
         const id = nodeEl.getAttribute('data-id');
@@ -1067,6 +1121,7 @@ export class CampaignScreen {
             ui._setScreen('game');
           } else {
             ui._selectedLevelId = id;
+            ui._userExplicitlySelectedLevel = true;
             this.renderChapterLevelsView();
           }
         }

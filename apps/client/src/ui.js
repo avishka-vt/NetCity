@@ -174,6 +174,8 @@ export class NetCityClientUI {
     this.completedLevels = this.stateManager.completedLevels;
     this._campaignView = 'chapters';
     this._currentViewingCh = 1;
+    this._selectedLevelId = null;
+    this._userExplicitlySelectedLevel = false;
     this._setScreen('campaign');
     this._renderCampaignScreen();
   }
@@ -678,6 +680,8 @@ export class NetCityClientUI {
       this._renderEndlessScreen();
       return;
     }
+    this._selectedLevelId = null;
+    this._userExplicitlySelectedLevel = false;
     if (selectedChNum) {
       this._campaignView = 'chapter_levels';
       this._currentViewingCh = selectedChNum;

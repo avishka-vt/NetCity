@@ -85,7 +85,15 @@ export const ASSET_PATHS = {
   'ui/lock': './assets/images/ui/lock.svg',
 
   // Terrain / Background
-  'background/grass': './assets/images/background-grass.png'
+  'background/grass': './assets/images/background-grass.png',
+
+  // Terrain / Obstacles / Ponds (Replacements for walls/grey grids)
+  'terrain/pond_1x1': './assets/images/terrain/pond_1x1.png',
+  'terrain/pond_2x1': './assets/images/terrain/pond_2x1.png',
+  'terrain/pond_3x1': './assets/images/terrain/pond_3x1.png',
+  'terrain/pond_1x2': './assets/images/terrain/pond_1x2.png',
+  'terrain/pond_2x2': './assets/images/terrain/pond_2x2.png',
+  'terrain/pond_3x2': './assets/images/terrain/pond_3x2.png'
 };
 
 export class AssetManager {

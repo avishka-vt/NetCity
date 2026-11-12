@@ -2166,6 +2166,15 @@
   pointer-events: auto;
 }
 
+.nc-svg-pedestal {
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+}
+
+.nc-svg-pedestal:hover {
+  filter: brightness(1.15);
+}
+
 /* Interactive Level Node: Hard reset to avoid inheriting legacy rectangular .nc-level-card styles */
 .nc-chapter-levels-map-wrap .nc-level-node.nc-level-card {
   position: absolute !important;
@@ -2255,6 +2264,15 @@
 }
 .nc-chapter-levels-map-wrap .nc-node-pill.completed .nc-node-pill-num {
   color: #34d399;
+}
+
+.nc-chapter-levels-map-wrap .nc-node-pill.chapter-cleared {
+  border-color: rgba(0, 240, 255, 0.55);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.4), 0 4px 14px rgba(0, 0, 0, 0.75);
+}
+.nc-chapter-levels-map-wrap .nc-node-pill.chapter-cleared .nc-node-pill-num {
+  color: #00f0ff;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
 }
 
 .nc-chapter-levels-map-wrap .nc-node-pill.locked {
@@ -2626,6 +2644,21 @@
   background: var(--color-cyan);
   box-shadow: 0 0 8px var(--color-cyan);
   animation: ncPulseDot 2s infinite ease-in-out;
+}
+
+.nc-status-orb {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #38bdf8 50%, #0077ff 100%);
+  box-shadow: 0 0 10px #00f0ff;
+  animation: ncPulseDot 2s infinite ease-in-out;
+}
+
+.nc-glowing-orb-group {
+  cursor: pointer;
+  filter: drop-shadow(0 2px 8px rgba(0, 240, 255, 0.4));
 }
 
 @keyframes ncPulseDot {

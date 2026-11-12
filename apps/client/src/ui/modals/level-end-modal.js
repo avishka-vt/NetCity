@@ -87,6 +87,8 @@ export function showLevelWonModal(ui) {
   ui.modalEl.querySelector('#nc-card-levels').onclick = () => {
     ui._closeModal();
     ui._campaignView = 'chapters';
+    ui._selectedLevelId = null;
+    ui._userExplicitlySelectedLevel = false;
     ui._setScreen('campaign');
     ui._renderCampaignScreen();
   };
@@ -128,6 +130,8 @@ export function showLevelOverModal(ui) {
   ui.modalEl.querySelector('#nc-card-levels').onclick = () => {
     ui._closeModal();
     ui._campaignView = 'chapters';
+    ui._selectedLevelId = null;
+    ui._userExplicitlySelectedLevel = false;
     ui._setScreen('campaign');
     ui._renderCampaignScreen();
   };

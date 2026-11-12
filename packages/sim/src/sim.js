@@ -50,6 +50,7 @@ export class NetCitySimulation {
     this.serverSquares = new Set(this.servers.map(s => s.square));
 
     this.walls = new Set(Array.isArray(mapData.walls) ? mapData.walls : []);
+    this.wallBlocks = Array.isArray(mapData.wallBlocks) ? mapData.wallBlocks : [];
     this.noisySquares = new Set(mapData.noisySquares || []);
     this.snoopSquares = new Set(mapData.snoopSquares || []);
     this.crashedServers = new Set();

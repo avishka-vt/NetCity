@@ -332,6 +332,24 @@ test('Campaign Screen Redesign: Horizontal scrolling road map across glowing ped
     assert.equal(ui.completedLevels.size, 0, 'Reset progress must clear all completed levels');
     assert.equal(ui._currentViewingCh, 1, 'Reset progress must return to Chapter 1');
 
+    // 6. Chapter Victory State: When final level in chapter is completed,
+    // all cables are connected with flowing packets, no checkmarks on individual nodes, and glowing orbs on all nodes
+    ui.completedLevels.add('1.9'); // Final level in Chapter 1 completed
+    ui._campaignView = 'chapter_levels';
+    ui._currentViewingCh = 1;
+    ui._renderCampaignScreen();
+
+    const victoryHtml = ui.screenCampaignEl.innerHTML;
+    // Must have Glowing Orbs on all pedestals
+    const glowingOrbs = ui.screenCampaignEl.querySelectorAll('.nc-glowing-orb-group');
+    assert.equal(glowingOrbs.length, 9, 'All 9 pedestals in cleared Chapter 1 must display Glowing Orbs');
+    // Must NOT have checkmark badges on individual nodes
+    const checkmarks = ui.screenCampaignEl.querySelectorAll('.nc-status-check');
+    assert.equal(checkmarks.length, 0, 'Must NOT display checkmark badges on individual nodes in completed chapter');
+    // All cables must be glowing and connected
+    assert.ok(victoryHtml.includes('ncCableGlow'), 'All cables must have active glowing styling');
+    assert.ok(victoryHtml.includes('animateMotion'), 'Data packets must animate along the cables');
+
     ui.destroy();
   } finally {
     globalThis.window = prevWindow;

@@ -83,6 +83,7 @@ export const ASSET_PATHS = {
   // UI
   'ui/logo': './assets/images/ui/logo.svg',
   'ui/lock': './assets/images/ui/lock.svg',
+  'ui/chief_juno': './assets/images/ui/chief_juno.png',
 
   // Terrain / Background
   'background/grass': './assets/images/background-grass.png',
@@ -198,10 +199,12 @@ export class AssetManager {
       (type.startsWith('phone') ? this.get('buildings/phone') : null);
     if (!img) return false;
     const drawScale = (type.startsWith('sports_ground') || type.startsWith('ground'))
-      ? 1.25
-      : ((type.startsWith('school') || type.startsWith('classroom') || type.startsWith('library'))
-          ? 1.15
-          : ((type.startsWith('lab') || type.startsWith('computer_lab')) ? 1.10 : 0.98));
+      ? 1.85
+      : ((type.startsWith('school') || type.startsWith('classroom'))
+          ? 1.65
+          : ((type.startsWith('library') || type.startsWith('lab') || type.startsWith('computer_lab'))
+              ? 1.60
+              : 1.50));
     return this.drawCrisp(ctx, img, cx, cy, sz * drawScale, sz * drawScale);
   }
 
@@ -210,7 +213,7 @@ export class AssetManager {
     if (type === 'ap' || type === 'access_point') key = 'devices/access_point';
     const img = this.get(key) || (type.startsWith('router') ? this.get('devices/router') : null);
     if (!img) return false;
-    const drawScale = (type === 'cabinet' || type.startsWith('cabinet')) ? 1.05 : 0.95;
+    const drawScale = (type === 'cabinet' || type.startsWith('cabinet')) ? 1.60 : 1.50;
     return this.drawCrisp(ctx, img, cx, cy, sz * drawScale, sz * drawScale);
   }
 
@@ -224,7 +227,7 @@ export class AssetManager {
 
     const img = this.get(key) || this.get('devices/server');
     if (!img) return false;
-    return this.drawCrisp(ctx, img, cx, cy, sz * 1.05, sz * 1.05);
+    return this.drawCrisp(ctx, img, cx, cy, sz * 1.65, sz * 1.65);
   }
 
   getChapterAssetPath(chNum) {

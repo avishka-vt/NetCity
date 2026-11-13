@@ -7,6 +7,9 @@
 export function showDiagnosticsModal(ui) {
   if (!ui.modalEl) return;
   ui.modalEl.style.display = 'flex';
+  if (ui && typeof ui._pauseForModal === 'function') {
+    ui._pauseForModal();
+  }
 
   let buildingOptions = '';
   for (const b of ui.sim.buildings) {

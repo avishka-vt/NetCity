@@ -190,12 +190,12 @@ test('Toolbar Layout: Bottom dock toolbar is dedicated footer outside canvas-wra
     assert.ok(ui.camera.x >= 0, 'Camera X offset must be non-negative');
     assert.ok(ui.camera.y >= 0, 'Camera Y offset must be non-negative');
 
-    // Verify hint pill hides when empty
-    ui.hudController.setHint('');
-    assert.equal(ui.hintBarEl.style.display, 'none', 'Hint bar should be hidden when empty');
+    // Verify bottom-right hint pill is removed from bottom dock (handled by Chief Juno)
+    assert.equal(ui.hintBarEl, null, 'Hint bar element should be null');
+    assert.ok(!container.innerHTML.includes('nc-hint-bar'), 'nc-hint-bar should not exist in DOM template');
 
+    // HUDController setHint gracefully no-ops when hintBarEl is absent
     ui.hudController.setHint('Connect twisted pair cable');
-    assert.equal(ui.hintBarEl.style.display, 'inline-flex', 'Hint bar should be visible with text');
 
     ui.destroy();
   } finally {
@@ -358,3 +358,49 @@ test('Campaign Screen Redesign: Horizontal scrolling road map across glowing ped
     globalThis.cancelAnimationFrame = prevCaf;
   }
 });
+
+test('Gameplay Map: In-game assets (buildings, devices, servers) draw at enlarged scales (>= 1.5x)', () => {
+  const assets = new AssetManager();
+  const drawnSizes = [];
+
+  const mockCtx = {
+    save() {},
+    restore() {},
+    imageSmoothingEnabled: false,
+    drawImage(img, dx, dy, dw, dh) {
+      drawnSizes.push({ dx, dy, dw, dh });
+    }
+  };
+
+  // Populate mock images in cache for Node test environment
+  assets.images.set('buildings/laptop', { complete: true, naturalWidth: 480, naturalHeight: 480 });
+  assets.images.set('buildings/classroom', { complete: true, naturalWidth: 480, naturalHeight: 480 });
+  assets.images.set('devices/switch', { complete: true, naturalWidth: 480, naturalHeight: 480 });
+  assets.images.set('devices/server', { complete: true, naturalWidth: 480, naturalHeight: 480 });
+
+  const sz = 40;
+  // Test building drawing scale
+  assets.drawBuilding(mockCtx, 'laptop', 100, 100, sz);
+  const laptopDraw = drawnSizes[drawnSizes.length - 1];
+  assert.ok(laptopDraw, 'Laptop must draw');
+  assert.ok(laptopDraw.dw >= sz * 1.5, `Building width (${laptopDraw.dw}) must be at least 1.5x square size (${sz * 1.5})`);
+
+  // Test school drawing scale
+  assets.drawBuilding(mockCtx, 'school', 100, 100, sz);
+  const schoolDraw = drawnSizes[drawnSizes.length - 1];
+  assert.ok(schoolDraw, 'School must draw');
+  assert.ok(schoolDraw.dw >= sz * 1.6, `School width (${schoolDraw.dw}) must be at least 1.6x square size`);
+
+  // Test device drawing scale
+  assets.drawDevice(mockCtx, 'switch', 100, 100, sz);
+  const switchDraw = drawnSizes[drawnSizes.length - 1];
+  assert.ok(switchDraw, 'Switch must draw');
+  assert.ok(switchDraw.dw >= sz * 1.5, `Switch width (${switchDraw.dw}) must be at least 1.5x square size`);
+
+  // Test server drawing scale
+  assets.drawServer(mockCtx, 'server', 100, 100, sz);
+  const serverDraw = drawnSizes[drawnSizes.length - 1];
+  assert.ok(serverDraw, 'Server must draw');
+  assert.ok(serverDraw.dw >= sz * 1.6, `Server width (${serverDraw.dw}) must be at least 1.6x square size`);
+});
+

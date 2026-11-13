@@ -72,11 +72,26 @@ export class NetCitySimulation {
 
     this.tickNumber = 0;
     this.coins = mapData.startingCoins !== undefined ? mapData.startingCoins : (mapData.coins || 60);
+    this.startingCoins = this.coins;
     this.spent = 0;
     this.status = 'playing'; // 'playing' | 'won' | 'level_over'
     this.paused = false;
+    this.timersPaused = Boolean(mapData.timersPaused || mapData.stopTimers || mapData.isTutorial);
+    this.modalOpen = false;
     this.rewindsUsed = 0;
     this.safetyNetUsed = false;
+
+    // Telemetry & Fault Cause Tracking (for Chief Juno reactions & star grading)
+    this.lastBuildingDropReason = new Map();
+    this.activeFaultEvents = new Set();
+    this.hadWireBuildingIds = new Set();
+    this._emittedEventWarnings = new Set();
+    this.pendingEndlessEvent = null;
+    this.failCause = null;
+    this.failingBuilding = null;
+    this.dropsCount = 0;
+    this.collisionsCount = 0;
+    this.lowestTimerRatio = 1.0;
 
     // Deterministic PRNG streams — tracked call count for checkpoint/rewind (Bug O fix)
     this._netRngBase = createStreamRng(mapData.seed, 'net');
@@ -136,6 +151,8 @@ export class NetCitySimulation {
       const y = Math.floor(this.spawnRng() * h);
       const sq = y * w + x;
       if (used.has(sq)) continue;
+      // Avoid bottom-center dock obscured area
+      if (h >= 6 && y >= h - 1 && x >= Math.floor(w * 0.3) && x <= Math.floor(w * 0.7)) continue;
 
       let minDist = Math.abs(x - sx) + Math.abs(y - sy);
       for (const d of this.devices.values()) {
@@ -516,6 +533,12 @@ export class NetCitySimulation {
     this.spent += spec.cost;
     this.devices.set(deviceId, device);
 
+    if (type === 'backup_power' && this.poweredDownSquares.size > 0) {
+      this.poweredDownSquares.clear();
+      this.activeFaultEvents.delete('PowerCut');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'PowerCut' });
+    }
+
     this.commandLog.push({
       tick: this.tickNumber,
       command: 'placeDevice',
@@ -793,6 +816,7 @@ export class NetCitySimulation {
       if (building) {
         building.wireId = wireId;
         building.warning = false;
+        this.hadWireBuildingIds.add(sourceId);
       }
     }
 
@@ -804,12 +828,48 @@ export class NetCitySimulation {
     this.commandLog.push({
       tick: this.tickNumber,
       command: 'connectWire',
-      payload: { sourceId, sourceType, wireType, path: [...path] }
+      payload: { wireId, sourceId, sourceType, wireType, path: [...path] }
     });
+
+    if (this.activeFaultEvents.has('CableCut')) {
+      this.activeFaultEvents.delete('CableCut');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'CableCut' });
+    }
+    if (this.activeFaultEvents.has('LinkCut')) {
+      this.activeFaultEvents.delete('LinkCut');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'LinkCut' });
+    }
 
     this.saveCheckpoint();
 
     return { success: true, wire: link };
+  }
+
+  /**
+   * Undo the last placed wire and refund its coins.
+   */
+  undoLastWire() {
+    let targetWireId = null;
+    for (let i = this.commandLog.length - 1; i >= 0; i--) {
+      const entry = this.commandLog[i];
+      if (entry.command === 'connectWire' && entry.payload && entry.payload.wireId && this.wires.has(entry.payload.wireId)) {
+        targetWireId = entry.payload.wireId;
+        this.commandLog.splice(i, 1);
+        break;
+      }
+    }
+    if (targetWireId === null && this.wires.size > 0) {
+      const keys = Array.from(this.wires.keys());
+      targetWireId = keys[keys.length - 1];
+    }
+    if (targetWireId === null) {
+      return { success: false, message: 'Nothing to undo.' };
+    }
+    const res = this.removeWireById(targetWireId);
+    if (res.success) {
+      this.events.push({ type: 'WireUndone', tick: this.tickNumber, wireId: targetWireId, refund: res.refund });
+    }
+    return res;
   }
 
   removeWireById(wireId) {
@@ -861,6 +921,10 @@ export class NetCitySimulation {
     wire.speed = Math.min(8, wire.speed * 2);
     wire.capacity *= 2;
     this.events.push({ type: 'WireUpgraded', tick: this.tickNumber, wireId });
+    if (this.activeFaultEvents.has('SlowLink')) {
+      this.activeFaultEvents.delete('SlowLink');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'SlowLink' });
+    }
     return { success: true, wire };
   }
 
@@ -869,6 +933,10 @@ export class NetCitySimulation {
     if (!wire) return false;
     wire.encrypted = Boolean(encrypted);
     this.events.push({ type: 'WireEncrypted', tick: this.tickNumber, wireId, encrypted: wire.encrypted });
+    if (wire.encrypted && this.activeFaultEvents.has('Eavesdropper')) {
+      this.activeFaultEvents.delete('Eavesdropper');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'Eavesdropper' });
+    }
     return true;
   }
 
@@ -890,6 +958,10 @@ export class NetCitySimulation {
     }
 
     this.events.push({ type: 'PortZoneSet', tick: this.tickNumber, deviceId, portWireId, zone: zoneColor });
+    if (this.activeFaultEvents.has('WrongZoneTest')) {
+      this.activeFaultEvents.delete('WrongZoneTest');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'WrongZoneTest' });
+    }
     return true;
   }
 
@@ -899,6 +971,10 @@ export class NetCitySimulation {
     if (!dev.staticRoutes) dev.staticRoutes = new Map();
     dev.staticRoutes.set(destinationSubnet, nextHopSquare);
     this.events.push({ type: 'StaticRouteSet', tick: this.tickNumber, deviceId, destinationSubnet, nextHopSquare });
+    if (this.activeFaultEvents.has('MissingRoute')) {
+      this.activeFaultEvents.delete('MissingRoute');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'MissingRoute' });
+    }
     return true;
   }
 
@@ -935,6 +1011,10 @@ export class NetCitySimulation {
     const ruleObj = { id: ruleId, ...rule };
     dev.rules.push(ruleObj);
     this.events.push({ type: 'FirewallRuleAdded', tick: this.tickNumber, deviceId, rule: ruleObj });
+    if (ruleObj.action === 'block' && this.activeFaultEvents.has('TrafficFlood')) {
+      this.activeFaultEvents.delete('TrafficFlood');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'TrafficFlood' });
+    }
     return ruleId;
   }
 
@@ -952,6 +1032,9 @@ export class NetCitySimulation {
     dev.loopGuardActive = Boolean(enabled);
     if (!dev.loopGuardActive) {
       dev.blockedPorts.clear();
+    } else if (this.activeFaultEvents.has('PacketStorm')) {
+      this.activeFaultEvents.delete('PacketStorm');
+      this.events.push({ type: 'EventFixed', tick: this.tickNumber, eventType: 'PacketStorm' });
     }
     this.events.push({ type: 'LoopGuardToggled', tick: this.tickNumber, deviceId, enabled: dev.loopGuardActive });
     return true;
@@ -1181,6 +1264,7 @@ export class NetCitySimulation {
     if (this.safetyNetUsed) return false;
     this.coins += neededCost;
     this.safetyNetUsed = true;
+    this.events.push({ type: 'SafetyNetPaid', tick: this.tickNumber, coins: neededCost });
     return true;
   }
 
@@ -1376,8 +1460,21 @@ export class NetCitySimulation {
 
     // 0. Scheduled Events (e.g. CableCut, ServerCrash, PowerCut, TrafficFlood, LinkCut, WrongZoneTest)
     if (Array.isArray(this.mapData.events)) {
-      for (const ev of this.mapData.events) {
+      for (let evIdx = 0; evIdx < this.mapData.events.length; evIdx++) {
+        const ev = this.mapData.events[evIdx];
+        const warnTick = Math.max(1, (ev.tick || 1) - 200);
+        if (this.tickNumber >= warnTick && this.tickNumber < ev.tick && !this._emittedEventWarnings.has(evIdx)) {
+          this._emittedEventWarnings.add(evIdx);
+          this.events.push({
+            type: 'EventWarning',
+            tick: this.tickNumber,
+            eventType: ev.type,
+            targetTick: ev.tick,
+            buildingId: ev.targetBuildingId || ev.sourceBuildingId || null
+          });
+        }
         if (ev.tick === this.tickNumber) {
+          this.activeFaultEvents.add(ev.type);
           if (ev.type === 'CableCut') {
             let targetWire = null;
             if (ev.wireId && this.wires.has(ev.wireId)) {
@@ -1580,10 +1677,26 @@ export class NetCitySimulation {
         }
       }
 
-      // Procedural events in Endless
+      // Procedural events in Endless (10s / 200-tick advance warning)
       if (!this.nextEndlessEventTick) this.nextEndlessEventTick = 1200;
+      if (!this.pendingEndlessEvent && this.tickNumber >= Math.max(1, this.nextEndlessEventTick - 200)) {
+        const eligible = this.mapData.eligibleEvents || ['CableCut', 'SlowLink'];
+        if (eligible && eligible.length > 0) {
+          const evType = eligible[Math.floor(this.eventRng() * eligible.length)];
+          this.pendingEndlessEvent = { type: evType, targetTick: this.nextEndlessEventTick };
+          this.events.push({
+            type: 'EventWarning',
+            tick: this.tickNumber,
+            eventType: evType,
+            targetTick: this.nextEndlessEventTick,
+            buildingId: null
+          });
+        }
+      }
       if (this.tickNumber >= this.nextEndlessEventTick) {
-        this.triggerEndlessRandomEvent();
+        const forcedType = this.pendingEndlessEvent ? this.pendingEndlessEvent.type : null;
+        this.pendingEndlessEvent = null;
+        this.triggerEndlessRandomEvent(forcedType);
         const evInterval = Math.max(400, Math.floor(1800 * Math.pow(0.90, this.tickNumber / 2400)));
         this.nextEndlessEventTick = this.tickNumber + evInterval;
       }
@@ -1811,12 +1924,7 @@ export class NetCitySimulation {
           if (blockedReason) {
             b.warning = true;
             this.recentDrops.push(this.tickNumber);
-            this.events.push({
-              type: 'PacketDropped',
-              tick: this.tickNumber,
-              buildingId: b.id,
-              reason: blockedReason
-            });
+            this._recordPacketDrop(b.id, blockedReason);
           } else {
             const isEncrypted = routeFound.isEncrypted || routeFound.isVpnEncapsulated;
             const latencyDelay = isEncrypted ? 2 : 0;
@@ -1834,12 +1942,7 @@ export class NetCitySimulation {
             }
 
             if (droppedInNoise) {
-              this.events.push({
-                type: 'PacketDropped',
-                tick: this.tickNumber,
-                buildingId: b.id,
-                reason: 'electrical_noise'
-              });
+              this._recordPacketDrop(b.id, 'electrical_noise');
             } else {
               this.inFlightPackets.push({
                 id: this.nextPacketId++,
@@ -1866,12 +1969,7 @@ export class NetCitySimulation {
         } else {
           // No link: packet lost, show warning marker
           b.warning = true;
-          this.events.push({
-            type: 'PacketDropped',
-            tick: this.tickNumber,
-            buildingId: b.id,
-            reason: 'no_wire'
-          });
+          this._recordPacketDrop(b.id, 'no_wire');
         }
 
         const jitter = Math.floor(this._netRng() * (b.requestIntervalTicks / 2));
@@ -1915,6 +2013,7 @@ export class NetCitySimulation {
     for (const [hubId, pkts] of hubArrivals.entries()) {
       if (pkts.length >= 2) {
         const hubDev = this.getDevice(hubId);
+        this.collisionsCount++;
         this.events.push({
           type: 'Collision',
           tick: this.tickNumber,
@@ -1932,24 +2031,14 @@ export class NetCitySimulation {
       if (this.tickNumber >= pkt.arrivalTick) {
         if (collidedPktIds.has(pkt.id)) {
           this.recentDrops.push(this.tickNumber);
-          this.events.push({
-            type: 'PacketDropped',
-            tick: this.tickNumber,
-            buildingId: pkt.buildingId,
-            reason: 'hub_collision'
-          });
+          this._recordPacketDrop(pkt.buildingId, 'hub_collision');
           continue;
         }
 
         if (pkt.faded) {
           // SIGNAL FADE RULE: over-range wire requests are lost with reason signal_faded
           this.recentDrops.push(this.tickNumber);
-          this.events.push({
-            type: 'PacketDropped',
-            tick: this.tickNumber,
-            buildingId: pkt.buildingId,
-            reason: 'signal_faded'
-          });
+          this._recordPacketDrop(pkt.buildingId, 'signal_faded');
           continue;
         }
 
@@ -1957,12 +2046,7 @@ export class NetCitySimulation {
         const srvAtDest = this.getServerAt(pkt.path[pkt.path.length - 1]);
         if (srvAtDest && this.crashedServers.has(srvAtDest.id)) {
           this.recentDrops.push(this.tickNumber);
-          this.events.push({
-            type: 'PacketDropped',
-            tick: this.tickNumber,
-            buildingId: pkt.buildingId,
-            reason: 'server_down'
-          });
+          this._recordPacketDrop(pkt.buildingId, 'server_down');
           continue;
         }
 
@@ -2003,8 +2087,10 @@ export class NetCitySimulation {
         // Rogue device breach check
         if (b && b.isRogue) {
           this.events.push({ type: 'SecurityBreach', tick: this.tickNumber, buildingId: b.id });
+          this.failingBuilding = b;
+          this.failCause = 'blocked_or_exposed';
           this.status = 'level_over';
-          this.events.push({ type: 'LevelOver', tick: this.tickNumber, reason: 'security_breach' });
+          this.events.push({ type: 'LevelOver', tick: this.tickNumber, reason: 'security_breach', buildingId: b.id, failCause: this.failCause });
           return this.events;
         }
 
@@ -2055,8 +2141,9 @@ export class NetCitySimulation {
     this.happinessMeter = Math.max(0, Math.min(100, Math.round(baseHappiness - dropPenalty)));
 
     if (this.mapData.goal === 'keep_happy' && this.happinessMeter < 40) {
+      this.failCause = this._inferFailCause(null, 'unhappy_citizens');
       this.status = 'level_over';
-      this.events.push({ type: 'LevelOver', tick: this.tickNumber, reason: 'unhappy_citizens' });
+      this.events.push({ type: 'LevelOver', tick: this.tickNumber, reason: 'unhappy_citizens', failCause: this.failCause });
       return this.events;
     }
 
@@ -2065,22 +2152,32 @@ export class NetCitySimulation {
       this.events.filter(e => e.type === 'CycleMet').map(e => e.buildingId)
     );
 
-    for (const b of this.buildings) {
-      if (b.state !== 'open') continue;
+    if (!this.timersPaused && !this.modalOpen) {
+      for (const b of this.buildings) {
+        if (b.state !== 'open') continue;
 
-      if (quotaMetThisTick.has(b.id)) continue; // timer just reset — don't burn 1 tick
+        if (quotaMetThisTick.has(b.id)) continue; // timer just reset — don't burn 1 tick
 
-      b.timerTicksLeft--;
+        b.timerTicksLeft--;
 
-      if (b.timerTicksLeft <= 0) {
-        b.state = 'gave_up';
-        this.events.push({ type: 'TimerExpired', tick: this.tickNumber, buildingId: b.id });
+        const maxTimer = b.timerPhase === 'first' ? b.firstTimerTicks : b.cycleTimerTicks;
+        if (maxTimer > 0) {
+          const ratio = Math.max(0, b.timerTicksLeft / maxTimer);
+          if (ratio < this.lowestTimerRatio) this.lowestTimerRatio = ratio;
+        }
 
-        // SUDDEN FAILURE RULE: If required, level is immediately over
-        if (b.required || this.isEndless) {
-          this.status = 'level_over';
-          this.events.push({ type: 'LevelOver', tick: this.tickNumber, buildingId: b.id });
-          return this.events;
+        if (b.timerTicksLeft <= 0) {
+          b.state = 'gave_up';
+          this.events.push({ type: 'TimerExpired', tick: this.tickNumber, buildingId: b.id });
+
+          // SUDDEN FAILURE RULE: If required, level is immediately over
+          if (b.required || this.isEndless) {
+            this.failingBuilding = b;
+            this.failCause = this._inferFailCause(b, 'timer_expired');
+            this.status = 'level_over';
+            this.events.push({ type: 'LevelOver', tick: this.tickNumber, buildingId: b.id, failCause: this.failCause });
+            return this.events;
+          }
         }
       }
     }
@@ -2095,8 +2192,9 @@ export class NetCitySimulation {
             this.status = 'won';
             this.events.push({ type: 'LevelWon', tick: this.tickNumber });
           } else {
+            this.failCause = this._inferFailCause(null, 'unhappy_citizens');
             this.status = 'level_over';
-            this.events.push({ type: 'LevelOver', tick: this.tickNumber });
+            this.events.push({ type: 'LevelOver', tick: this.tickNumber, failCause: this.failCause });
           }
         }
       } else if (this.mapData.goal === 'connect_all') {
@@ -2139,18 +2237,105 @@ export class NetCitySimulation {
     };
   }
 
+  _recordPacketDrop(buildingId, reason) {
+    if (buildingId != null && reason) {
+      this.lastBuildingDropReason.set(buildingId, reason);
+    }
+    if (!this.timersPaused) {
+      this.dropsCount++;
+    }
+    this.events.push({
+      type: 'PacketDropped',
+      tick: this.tickNumber,
+      buildingId,
+      reason
+    });
+  }
+
+  _inferFailCause(building, reason) {
+    if (reason === 'security_breach') return 'blocked_or_exposed';
+    const dropReason = building ? this.lastBuildingDropReason.get(building.id) : null;
+    if (dropReason === 'signal_faded') return 'signal_faded';
+    if (dropReason === 'electrical_noise') return 'noise';
+    if (dropReason === 'hub_collision' || dropReason === 'device_overloaded' || dropReason === 'queue_overflow' || dropReason === 'bandwidth_exceeded') {
+      return 'overflow';
+    }
+    if (dropReason === 'unencrypted' || dropReason === 'firewall_blocked' || dropReason === 'rogue_blocked') {
+      return 'blocked_or_exposed';
+    }
+    if (
+      dropReason === 'vlan_mismatch' || dropReason === 'vlan_isolated' ||
+      dropReason === 'duplicate_ip' || dropReason === 'missing_gateway' ||
+      dropReason === 'missing_route' || dropReason === 'no_route_to_subnet' ||
+      dropReason === 'subnet_mismatch' || dropReason === 'wrong_dns' ||
+      dropReason === 'loop_detected'
+    ) {
+      return 'missing_setting';
+    }
+    if (dropReason === 'cable_cut' || dropReason === 'link_cut') return 'single_point';
+    if (this.activeFaultEvents.has('CableCut') || this.activeFaultEvents.has('LinkCut')) {
+      return 'single_point';
+    }
+    if (this.activeFaultEvents.size > 0 || dropReason === 'server_down') {
+      return 'event_active';
+    }
+    if (dropReason === 'no_wire') return 'no_link';
+    if (building) {
+      const hasAnyWire = Array.from(this.wires.values()).some(
+        w => w.buildingId === building.id || w.path.includes(building.square)
+      );
+      if (!hasAnyWire) return 'no_link';
+    }
+    return 'any';
+  }
+
+  /**
+   * Evaluate 1 to 3 stars achieved at level win plus which star requirement was missed (if any).
+   */
+  evaluateStars(starsCriteria = ['cost', 'reliability']) {
+    let starsEarned = 1;
+    let missingStarKind = null;
+    const checks = Array.isArray(starsCriteria) && starsCriteria.length > 0
+      ? starsCriteria
+      : ['cost', 'reliability'];
+
+    for (const kind of checks) {
+      let passed = true;
+      if (kind === 'cost') {
+        passed = this.coins >= Math.floor((this.startingCoins || 0) * 0.1);
+      } else if (kind === 'reliability') {
+        passed = this.dropsCount === 0 && this.collisionsCount === 0;
+      } else if (kind === 'speed') {
+        passed = this.lowestTimerRatio >= 0.4;
+      } else if (kind === 'clean') {
+        passed = this.rewindsUsed === 0 && this.dropsCount === 0;
+      }
+      if (passed) {
+        starsEarned++;
+      } else if (!missingStarKind) {
+        missingStarKind = kind;
+      }
+    }
+
+    return {
+      starsEarned: Math.min(3, starsEarned),
+      missingStarKind
+    };
+  }
+
   /**
    * Procedural random events in Endless Mode (Section 8 & 9.7)
    */
-  triggerEndlessRandomEvent() {
+  triggerEndlessRandomEvent(forcedType = null) {
     const eligible = this.mapData.eligibleEvents || ['CableCut', 'SlowLink'];
     if (!eligible || eligible.length === 0) return;
-    const evType = eligible[Math.floor(this.eventRng() * eligible.length)];
+    const evType = forcedType || eligible[Math.floor(this.eventRng() * eligible.length)];
 
     if (evType === 'CableCut' && this.wires.size > 0) {
       const wireList = Array.from(this.wires.values());
       const targetWire = wireList[Math.floor(this.eventRng() * wireList.length)];
       if (targetWire) {
+        this.activeFaultEvents.add('CableCut');
         this.removeWireById(targetWire.id);
         this.events.push({
           type: 'CableCut',
@@ -2161,6 +2346,7 @@ export class NetCitySimulation {
       }
     } else if (evType === 'ServerCrash' && this.servers && this.servers.length > 1) {
       const srv = this.servers[Math.floor(this.eventRng() * this.servers.length)];
+      this.activeFaultEvents.add('ServerCrash');
       this.crashedServers.add(srv.id);
       this.events.push({ type: 'ServerCrash', tick: this.tickNumber, serverId: srv.id });
     }

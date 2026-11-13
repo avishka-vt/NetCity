@@ -105,8 +105,8 @@ export class CanvasRenderer {
 
           if (img) {
             // Draw stylized organic pond with soft natural bleed over grid lines
-            const bleedX = Math.round(sz * 0.08);
-            const bleedY = Math.round(sz * 0.08);
+            const bleedX = Math.round(sz * 0.18);
+            const bleedY = Math.round(sz * 0.18);
             ctx.drawImage(img, bx - bleedX, by - bleedY, bw + bleedX * 2, bh + bleedY * 2);
           } else {
             this._drawVectorPondFallback(ctx, bx, by, bw, bh);
@@ -120,7 +120,7 @@ export class CanvasRenderer {
             const wy = Math.floor(sq / sim.width) * sz;
             const img1 = this.assets ? this.assets.get('terrain/pond_1x1') : null;
             if (img1) {
-              const bleed = Math.round(sz * 0.08);
+              const bleed = Math.round(sz * 0.18);
               ctx.drawImage(img1, wx - bleed, wy - bleed, sz + bleed * 2, sz + bleed * 2);
             } else {
               this._drawVectorPondFallback(ctx, wx, wy, sz, sz);
@@ -221,7 +221,7 @@ export class CanvasRenderer {
           const tailPos = getPathPoint(pkt.path, progress - 0.04, sz, sim.width);
           ctx.strokeStyle = pColor;
           ctx.globalAlpha = 0.3;
-          ctx.lineWidth = Math.max(1.5, sz * 0.08);
+          ctx.lineWidth = Math.max(2.0, sz * 0.10);
           ctx.beginPath();
           ctx.moveTo(tailPos.x, tailPos.y);
           ctx.lineTo(pos.x, pos.y);
@@ -231,12 +231,12 @@ export class CanvasRenderer {
         ctx.globalAlpha = 1.0;
         ctx.fillStyle = pColor;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, Math.max(3.5, sz * 0.16), 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, Math.max(4.5, sz * 0.20), 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, Math.max(1.5, sz * 0.07), 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, Math.max(2.0, sz * 0.09), 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
@@ -253,12 +253,16 @@ export class CanvasRenderer {
 
         // Radiant cyan circular pedestal pad (Image 1 target aesthetic)
         ctx.save();
-        const padR = sz * 0.46;
-        const glow = ctx.createRadialGradient(cx, cy, padR * 0.2, cx, cy, padR * 1.5);
-        glow.addColorStop(0, 'rgba(0, 229, 255, 0.45)');
-        glow.addColorStop(0.5, 'rgba(0, 229, 255, 0.18)');
-        glow.addColorStop(1, 'rgba(0, 229, 255, 0)');
-        ctx.fillStyle = glow;
+        const padR = sz * 0.60;
+        if (typeof ctx.createRadialGradient === 'function') {
+          const glow = ctx.createRadialGradient(cx, cy, padR * 0.2, cx, cy, padR * 1.5);
+          glow.addColorStop(0, 'rgba(0, 229, 255, 0.45)');
+          glow.addColorStop(0.5, 'rgba(0, 229, 255, 0.18)');
+          glow.addColorStop(1, 'rgba(0, 229, 255, 0)');
+          ctx.fillStyle = glow;
+        } else {
+          ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
+        }
         ctx.beginPath();
         ctx.arc(cx, cy, padR * 1.5, 0, Math.PI * 2);
         ctx.fill();
@@ -266,16 +270,27 @@ export class CanvasRenderer {
         // 3D base platform disc
         ctx.fillStyle = '#0369a1';
         ctx.beginPath();
-        ctx.ellipse(cx, cy + sz * 0.05, padR, padR * 0.65, 0, 0, Math.PI * 2);
+        if (typeof ctx.ellipse === 'function') {
+          ctx.ellipse(cx, cy + sz * 0.05, padR, padR * 0.65, 0, 0, Math.PI * 2);
+        } else {
+          ctx.arc(cx, cy + sz * 0.05, padR, 0, Math.PI * 2);
+        }
         ctx.fill();
 
         // Platform surface top disc
-        const platGrad = ctx.createLinearGradient(cx, cy - padR * 0.65, cx, cy + padR * 0.65);
-        platGrad.addColorStop(0, '#00e5ff');
-        platGrad.addColorStop(1, '#0284c7');
-        ctx.fillStyle = platGrad;
+        let platGrad = null;
+        if (typeof ctx.createLinearGradient === 'function') {
+          platGrad = ctx.createLinearGradient(cx, cy - padR * 0.65, cx, cy + padR * 0.65);
+          platGrad.addColorStop(0, '#00e5ff');
+          platGrad.addColorStop(1, '#0284c7');
+        }
+        ctx.fillStyle = platGrad || '#00e5ff';
         ctx.beginPath();
-        ctx.ellipse(cx, cy, padR, padR * 0.65, 0, 0, Math.PI * 2);
+        if (typeof ctx.ellipse === 'function') {
+          ctx.ellipse(cx, cy, padR, padR * 0.65, 0, 0, Math.PI * 2);
+        } else {
+          ctx.arc(cx, cy, padR, 0, Math.PI * 2);
+        }
         ctx.fill();
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 1.5;
@@ -296,7 +311,7 @@ export class CanvasRenderer {
 
         // Terminal nodes
         ctx.fillStyle = '#ffffff';
-        const nodeR = Math.max(2, sz * 0.05);
+        const nodeR = Math.max(2.5, sz * 0.06);
         const nodePositions = [
           [cx - diag, cy - diag * 0.65],
           [cx + diag, cy + diag * 0.65],
@@ -313,7 +328,7 @@ export class CanvasRenderer {
 
         const srvDrawn = this.assets ? this.assets.drawServer(ctx, srv.type || 'server', cx, cy, sz) : false;
         if (!srvDrawn) {
-          ctx.font = `${Math.floor(sz * 0.60)}px sans-serif`;
+          ctx.font = `${Math.floor(sz * 0.90)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(srv.icon || '🖥️', cx, cy);
@@ -328,38 +343,9 @@ export class CanvasRenderer {
         // Floating pill badge above server (multi-server identification)
         if (sz >= 20 && srv.name) {
           const zoneIcon = srv.zone === 'blue' ? '🔵' : (srv.zone === 'green' ? '🟢' : (srv.zone === 'orange' ? '🟠' : (srv.icon || '🖥️')));
-          const badgeText = `${zoneIcon}  ${srv.name}`;
-          const fontSize = Math.max(9, Math.floor(sz * 0.22));
-          ctx.save();
-          ctx.font = `bold ${fontSize}px sans-serif`;
-          const textW = ctx.measureText ? ctx.measureText(badgeText).width : badgeText.length * fontSize * 0.6;
-          const badgeW = textW + fontSize * 1.5;
-          const badgeH = Math.max(16, fontSize * 1.6);
-          const badgeX = sx + sz / 2 - badgeW / 2;
-          const badgeY = sy - badgeH * 0.85;
-
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-          ctx.shadowBlur = 6;
-          ctx.shadowOffsetY = 2;
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2);
-          } else {
-            ctx.rect(badgeX, badgeY, badgeW, badgeH);
-          }
-          ctx.fill();
-
-          ctx.shadowColor = 'transparent';
-          ctx.strokeStyle = srv.color || '#38bdf8';
-          ctx.lineWidth = 1.6;
-          ctx.stroke();
-
-          ctx.fillStyle = '#0f172a';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(badgeText, sx + sz / 2, badgeY + badgeH / 2);
-          ctx.restore();
+          this._drawFloatingBadge(ctx, `${zoneIcon}  ${srv.name}`, sx + sz / 2, sy - sz * 0.28, sz, {
+            borderColor: srv.color || '#38bdf8'
+          });
         }
       }
 
@@ -385,10 +371,14 @@ export class CanvasRenderer {
             const beaconR = Math.max(8, sz * 0.32);
             const beaconX = dx + sz / 2;
             const beaconY = dy + sz / 2;
-            const bGlow = ctx.createRadialGradient(beaconX, beaconY, beaconR * 0.4, beaconX, beaconY, beaconR * 1.6);
-            bGlow.addColorStop(0, 'rgba(0, 229, 255, 0.5)');
-            bGlow.addColorStop(1, 'rgba(0, 229, 255, 0)');
-            ctx.fillStyle = bGlow;
+            if (typeof ctx.createRadialGradient === 'function') {
+              const bGlow = ctx.createRadialGradient(beaconX, beaconY, beaconR * 0.4, beaconX, beaconY, beaconR * 1.6);
+              bGlow.addColorStop(0, 'rgba(0, 229, 255, 0.5)');
+              bGlow.addColorStop(1, 'rgba(0, 229, 255, 0)');
+              ctx.fillStyle = bGlow;
+            } else {
+              ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
+            }
             ctx.beginPath();
             ctx.arc(beaconX, beaconY, beaconR * 1.6, 0, Math.PI * 2);
             ctx.fill();
@@ -415,7 +405,7 @@ export class CanvasRenderer {
 
         const devDrawn = this.assets ? this.assets.drawDevice(ctx, dev.type, dx + sz / 2, dy + (isMultiPort ? sz * 0.44 : sz / 2), sz) : false;
         if (!devDrawn) {
-          ctx.font = `${Math.floor(sz * 0.70)}px sans-serif`;
+          ctx.font = `${Math.floor(sz * 0.92)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(spec.icon, dx + sz / 2, dy + (isMultiPort ? sz * 0.44 : sz / 2));
@@ -424,13 +414,13 @@ export class CanvasRenderer {
         if (isMultiPort) {
           const portCount = 4;
           const usedPorts = Math.min(portCount, (dev.connectedWires || []).length);
-          const ledR = Math.max(1.5, sz * 0.04);
-          const startX = dx + sz / 2 - ((portCount - 1) * ledR * 2.5) / 2;
-          const ledY = dy + sz - ledR * 2.2;
+          const ledR = Math.max(2, sz * 0.05);
+          const startX = dx + sz / 2 - ((portCount - 1) * ledR * 2.8) / 2;
+          const ledY = dy + sz - ledR * 1.5;
           for (let p = 0; p < portCount; p++) {
             ctx.fillStyle = p < usedPorts ? '#10b981' : '#334155';
             ctx.beginPath();
-            ctx.arc(startX + p * ledR * 2.5, ledY, ledR, 0, Math.PI * 2);
+            ctx.arc(startX + p * ledR * 2.8, ledY, ledR, 0, Math.PI * 2);
             ctx.fill();
           }
         }
@@ -465,7 +455,7 @@ export class CanvasRenderer {
         if ((isBlueZone || isGreenZone || isOrangeZone) && b.state !== 'gave_up') {
           ctx.save();
           ctx.beginPath();
-          ctx.arc(bx + sz / 2, by + sz * 0.54, sz * 0.44, 0, Math.PI * 2);
+          ctx.arc(bx + sz / 2, by + sz * 0.52, sz * 0.58, 0, Math.PI * 2);
           if (isBlueZone) {
             ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
             ctx.strokeStyle = '#38bdf8';
@@ -477,19 +467,49 @@ export class CanvasRenderer {
             ctx.strokeStyle = '#f59e0b';
           }
           ctx.fill();
-          ctx.lineWidth = 1.8;
+          ctx.lineWidth = 2.0;
           ctx.setLineDash([4, 3]);
           ctx.stroke();
           ctx.restore();
         }
 
         if (b.state === 'construction') {
+          // Animated caution sonar pulse and aura under construction site
+          const now = Date.now();
+          const pulse = (now % 1400) / 1400;
+          ctx.save();
+          // Expanding sonar ring
+          ctx.beginPath();
+          ctx.arc(bx + sz / 2, by + sz / 2, sz * (0.58 + pulse * 0.36), 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(245, 158, 11, ${Math.max(0, 1 - pulse) * 0.85})`;
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+
+          // Amber caution ground glow
+          ctx.beginPath();
+          ctx.arc(bx + sz / 2, by + sz / 2, sz * 0.58, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+          ctx.fill();
+          ctx.restore();
+
           const constDrawn = this.assets ? this.assets.drawBuilding(ctx, 'construction', bx + sz / 2, by + sz / 2, sz) : false;
           if (!constDrawn) {
-            ctx.font = `${Math.floor(sz * 0.65)}px sans-serif`;
+            ctx.font = `${Math.floor(sz * 0.88)}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('🚧', bx + sz / 2, by + sz / 2);
+          }
+
+          // Floating badge above construction site showing time left or "New Site"
+          if (sz >= 20) {
+            const ticksLeft = b.opensAtTick && sim.tickNumber ? Math.max(0, b.opensAtTick - sim.tickNumber) : null;
+            const badgeLabel = (ticksLeft !== null && ticksLeft > 0) ? `🚧 Site (${Math.ceil(ticksLeft / 20)}s)` : '🚧 New Site';
+            this._drawFloatingBadge(ctx, badgeLabel, bx + sz / 2, by - sz * 0.26, sz, {
+              bgColor: '#fffbeb',
+              textColor: '#b45309',
+              borderColor: '#f59e0b'
+            });
           }
         } else {
           let bldgType = b.type;
@@ -543,7 +563,7 @@ export class CanvasRenderer {
               icon = '🖥️';
             }
 
-            ctx.font = `${Math.floor(sz * 0.58)}px sans-serif`;
+            ctx.font = `${Math.floor(sz * 0.88)}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(icon, bx + sz / 2, by + (showMac && b.mac ? sz * 0.42 : sz * 0.48));
@@ -552,39 +572,12 @@ export class CanvasRenderer {
 
         // Tags removed from top of end devices (kept for servers). Alert only for rogue intruder devices.
         if (b.isRogue && b.state !== 'gave_up' && sz >= 20) {
-          const badgeText = '🚨  Rogue (10.99.99.99)';
-          const fontSize = Math.max(9, Math.floor(sz * 0.22));
-
-          ctx.save();
-          ctx.font = `bold ${fontSize}px sans-serif`;
-          const textW = ctx.measureText ? ctx.measureText(badgeText).width : badgeText.length * fontSize * 0.6;
-          const badgeW = textW + fontSize * 1.5;
-          const badgeH = Math.max(16, fontSize * 1.6);
-          const badgeX = bx + sz / 2 - badgeW / 2;
-          const badgeY = by - badgeH * 0.85;
-
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-          ctx.shadowBlur = 6;
-          ctx.shadowOffsetY = 2;
-          ctx.fillStyle = '#fef2f2';
-          ctx.beginPath();
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2);
-          } else {
-            ctx.rect(badgeX, badgeY, badgeW, badgeH);
-          }
-          ctx.fill();
-
-          ctx.shadowColor = 'transparent';
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 1.6;
-          ctx.stroke();
-
-          ctx.fillStyle = '#991b1b';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(badgeText, bx + sz / 2, badgeY + badgeH / 2);
-          ctx.restore();
+          this._drawFloatingBadge(ctx, '🚨  Rogue (10.99.99.99)', bx + sz / 2, by, sz, {
+            bgColor: '#fef2f2',
+            textColor: '#991b1b',
+            borderColor: '#ef4444',
+            shadowColor: 'rgba(0, 0, 0, 0.25)'
+          });
         }
 
         if (b.state === 'construction') {
@@ -592,9 +585,23 @@ export class CanvasRenderer {
         }
 
         if (b.state === 'open') {
-          ctx.font = `${Math.floor(sz * 0.32)}px sans-serif`;
+          // Unconnected building attention beacon wave: gentle cyan/emerald pulse
+          if (!b.wireId && (!b.fulfilledInCycle || b.fulfilledInCycle < b.quota)) {
+            const now = Date.now();
+            const pulse = (now % 1800) / 1800;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(bx + sz / 2, by + sz * 0.52, sz * (0.58 + pulse * 0.28), 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(6, 214, 160, ${Math.max(0, 1 - pulse) * 0.75})`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          ctx.font = `${Math.floor(sz * 0.38)}px sans-serif`;
           const destIcon = b.targetType === 'web' ? '🌐' : (b.targetType === 'db' ? '🗄️' : '📍');
-          ctx.fillText(destIcon, bx + sz * 0.20, by + sz * 0.20);
+          ctx.fillText(destIcon, bx + sz * 0.16, by + sz * 0.16);
         }
 
         if (levelDef && levelDef.chapter >= 3 && b.subnet && b.state === 'open') {
@@ -636,25 +643,26 @@ export class CanvasRenderer {
 
         if (b.state === 'open') {
           const totalTimer = b.timerPhase === 'first' ? b.firstTimerTicks : b.cycleTimerTicks;
-          const frac = Math.max(0, Math.min(1, b.timerTicksLeft / totalTimer));
+          const isPaused = Boolean(sim && (sim.timersPaused || sim.isTutorial));
+          const frac = isPaused ? 1 : Math.max(0, Math.min(1, b.timerTicksLeft / totalTimer));
 
           let ringColor = '#10b981';
           if (frac < 0.25) ringColor = '#ef4444';
           else if (frac < 0.5) ringColor = '#f59e0b';
 
           ctx.strokeStyle = ringColor;
-          ctx.lineWidth = Math.max(2, sz * 0.08);
+          ctx.lineWidth = Math.max(2.5, sz * 0.09);
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.arc(bx + sz / 2, by + sz / 2, sz * 0.44, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+          ctx.arc(bx + sz / 2, by + sz * 0.50, sz * 0.60, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
           ctx.stroke();
 
-          const dotRadius = Math.max(2, sz * 0.05);
-          const startDotX = bx + sz / 2 - ((b.quota - 1) * dotRadius * 2.5) / 2;
+          const dotRadius = Math.max(2.5, sz * 0.065);
+          const startDotX = bx + sz / 2 - ((b.quota - 1) * dotRadius * 2.6) / 2;
           for (let q = 0; q < b.quota; q++) {
             ctx.fillStyle = q < b.fulfilledInCycle ? '#2ec4b6' : '#334155';
             ctx.beginPath();
-            ctx.arc(startDotX + q * dotRadius * 2.5, by + sz - dotRadius * 2, dotRadius, 0, Math.PI * 2);
+            ctx.arc(startDotX + q * dotRadius * 2.6, by + sz * 1.06, dotRadius, 0, Math.PI * 2);
             ctx.fill();
           }
         }
@@ -730,8 +738,135 @@ export class CanvasRenderer {
       }
 
       ctx.restore();
+
+      // 9. Edge indicators for off-screen and dock-obscured buildings
+      this._drawEdgeIndicators(ctx, sim, camera, sz);
     } catch (err) {
       console.error('Render error:', err);
+    }
+  }
+
+  /**
+   * Screen-edge directional beacons & badges pointing towards off-screen
+   * or bottom-dock obscured buildings requiring player attention.
+   */
+  _drawEdgeIndicators(ctx, sim, camera, sz) {
+    this.edgeIndicators = [];
+    if (!ctx || !sim || !camera || !this.canvas) return;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    if (!w || !h || w < 200 || h < 200) return;
+
+    const safeMinX = 36;
+    const safeMaxX = w - 36;
+    const safeMinY = 72;
+    const safeMaxY = h - 130;
+    if (safeMaxX <= safeMinX || safeMaxY <= safeMinY) return;
+
+    const safeCenterX = w / 2;
+    const safeCenterY = (safeMinY + safeMaxY) / 2;
+
+    const dockW = 500;
+    const dockH = 120;
+    const dockX1 = (w - dockW) / 2;
+    const dockX2 = (w + dockW) / 2;
+    const dockY1 = h - dockH;
+
+    for (const b of sim.buildings) {
+      const isConstruction = b.state === 'construction';
+      const isUnconnected = b.state === 'open' && !b.wireId;
+      const totalTimer = b.timerPhase === 'first' ? b.firstTimerTicks : b.cycleTimerTicks;
+      const isUrgent = b.warning || (b.state === 'open' && totalTimer > 0 && (b.timerTicksLeft / totalTimer) <= 0.35);
+
+      if (!isConstruction && !isUnconnected && !isUrgent) continue;
+
+      const gx = b.square % sim.width;
+      const gy = Math.floor(b.square / sim.width);
+      const sx = gx * sz + camera.x + sz / 2;
+      const sy = gy * sz + camera.y + sz / 2;
+
+      const isOffScreen = sx < 16 || sx > w - 16 || sy < 55 || sy > h - 16;
+      const isBehindDock = sx >= dockX1 - 20 && sx <= dockX2 + 20 && sy >= dockY1 - 10;
+
+      if (!isOffScreen && !isBehindDock) continue;
+
+      const dx = sx - safeCenterX;
+      const dy = sy - safeCenterY;
+      if (dx === 0 && dy === 0) continue;
+
+      let tMin = Infinity;
+      if (dx > 0) tMin = Math.min(tMin, (safeMaxX - safeCenterX) / dx);
+      if (dx < 0) tMin = Math.min(tMin, (safeMinX - safeCenterX) / dx);
+      if (dy > 0) tMin = Math.min(tMin, (safeMaxY - safeCenterY) / dy);
+      if (dy < 0) tMin = Math.min(tMin, (safeMinY - safeCenterY) / dy);
+      if (!isFinite(tMin) || tMin <= 0) continue;
+
+      const indX = Math.round(safeCenterX + dx * tMin);
+      const indY = Math.round(safeCenterY + dy * tMin);
+      const angle = Math.atan2(dy, dx);
+
+      let icon = '🏫';
+      if (isConstruction) icon = '🚧';
+      else if (b.type === 'laptop') icon = '💻';
+      else if (b.type === 'phone' || b.type === 'tablet') icon = '📱';
+      else if (b.type === 'sports_ground') icon = '⚽';
+      else if (b.type === 'library') icon = '📚';
+      else if (b.type === 'lab' || b.type === 'computer_lab') icon = '🖥️';
+      else if (b.type === 'home') icon = '🏠';
+
+      let borderColor = '#06d6a0';
+      if (isUrgent) borderColor = '#ef4444';
+      else if (isConstruction) borderColor = '#f59e0b';
+
+      ctx.save();
+      const radius = 18;
+
+      if (isUrgent || isConstruction) {
+        const pulse = (Date.now() % 1200) / 1200;
+        ctx.beginPath();
+        ctx.arc(indX, indY, radius + 4 + pulse * 8, 0, Math.PI * 2);
+        ctx.strokeStyle = isUrgent ? `rgba(239, 68, 68, ${1 - pulse})` : `rgba(245, 158, 11, ${1 - pulse})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(indX, indY, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = borderColor;
+      ctx.stroke();
+
+      const arrowDist = radius + 6;
+      const arrowTipX = indX + Math.cos(angle) * arrowDist;
+      const arrowTipY = indY + Math.sin(angle) * arrowDist;
+      const arrowBaseX1 = indX + Math.cos(angle + 0.45) * (radius - 2);
+      const arrowBaseY1 = indY + Math.sin(angle + 0.45) * (radius - 2);
+      const arrowBaseX2 = indX + Math.cos(angle - 0.45) * (radius - 2);
+      const arrowBaseY2 = indY + Math.sin(angle - 0.45) * (radius - 2);
+
+      ctx.beginPath();
+      ctx.moveTo(arrowTipX, arrowTipY);
+      ctx.lineTo(arrowBaseX1, arrowBaseY1);
+      ctx.lineTo(arrowBaseX2, arrowBaseY2);
+      if (typeof ctx.closePath === 'function') ctx.closePath();
+      ctx.fillStyle = borderColor;
+      ctx.fill();
+
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(icon, indX, indY);
+      ctx.restore();
+
+      this.edgeIndicators.push({
+        x: indX,
+        y: indY,
+        radius: radius + 4,
+        square: b.square,
+        building: b
+      });
     }
   }
 
@@ -837,6 +972,47 @@ export class CanvasRenderer {
     ctx.arc(lcx, lcy, lr, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.restore();
+  }
+
+  _drawFloatingBadge(ctx, badgeText, centerX, topY, sz, options = {}) {
+    const {
+      bgColor = '#ffffff',
+      textColor = '#0f172a',
+      borderColor = '#38bdf8',
+      shadowColor = 'rgba(0, 0, 0, 0.3)'
+    } = options;
+
+    const fontSize = Math.max(10, Math.floor(sz * 0.25));
+    ctx.save();
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    const textW = ctx.measureText ? ctx.measureText(badgeText).width : badgeText.length * fontSize * 0.6;
+    const badgeW = textW + fontSize * 1.5;
+    const badgeH = Math.max(18, fontSize * 1.7);
+    const badgeX = centerX - badgeW / 2;
+    const badgeY = topY - badgeH * 0.85;
+
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+    } else {
+      ctx.rect(badgeX, badgeY, badgeW, badgeH);
+    }
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, centerX, badgeY + badgeH / 2);
     ctx.restore();
   }
 }

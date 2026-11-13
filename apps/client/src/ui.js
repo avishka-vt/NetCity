@@ -10,12 +10,7 @@
  * - Modals & Inspectors: ModalManager, LevelEndModals, DiagnosticsModal, HardwareInspectors
  */
 
-import { WIRE_CATALOG, REFUSAL_MESSAGES } from '../../../packages/content/src/wires.js';
-import { ALL_LEVELS, getLevelById } from '../../../packages/content/src/levels.js';
-import { DEVICE_CATALOG } from '../../../packages/content/src/devices.js';
 import { NetCitySimulation } from '../../../packages/sim/src/sim.js';
-import { bfsPath } from '../../../packages/sim/src/pathfinding.js';
-import { createStreamRng } from '../../../packages/sim/src/prng.js';
 import { AssetManager } from './assets.js';
 
 // Modular Subsystems
@@ -23,24 +18,23 @@ import { StateManager } from './core/state-manager.js';
 import { findValidSquare, generateLevelMap } from './core/level-loader.js';
 import { GameLoop } from './core/game-loop.js';
 import { Camera } from './rendering/camera.js';
-import { drawRoundRect, drawWirePath, getPathPoint } from './rendering/draw-utils.js';
 import { CanvasRenderer } from './rendering/canvas-renderer.js';
 import { PathBuilder } from './input/path-builder.js';
 import { InteractionController } from './input/interaction-controller.js';
 import { HUDController } from './ui/hud-controller.js';
 import { DockController } from './ui/dock-controller.js';
-import { CampaignScreen, getChaptersData } from './ui/screens/campaign-screen.js';
+import { CampaignScreen } from './ui/screens/campaign-screen.js';
 import { LearnScreen } from './ui/screens/learn-screen.js';
 import { EndlessScreen } from './ui/screens/endless-screen.js';
 import { getUnlockedTier, getEndlessSetup } from '../../../packages/content/src/endless-config.js';
+import { SIM_EVENT_TO_JUNO_ID, formatJunoLine, getJunoLevelIntro } from '../../../packages/content/src/juno-text.js';
 import { ModalManager } from './ui/modals/modal-manager.js';
 import { showLevelWonModal, showLevelOverModal } from './ui/modals/level-end-modal.js';
 import { showLevelBriefingModal } from './ui/modals/briefing-modal.js';
 import { showDiagnosticsModal } from './ui/modals/diagnostics-modal.js';
+import { JunoCommsOverlay } from './ui/juno-dialog.js';
+import { TutorialController } from './ui/tutorial-controller.js';
 import {
-  getDeviceConnections,
-  renderDevicePortsHtml,
-  bindDisconnectButtons,
   reopenCurrentDeviceInspector,
   showSwitchNotebook,
   showBuildingInspector,
@@ -109,6 +103,8 @@ export class NetCityClientUI {
     this.campaignScreen = new CampaignScreen(this);
     this.learnScreen = new LearnScreen(this);
     this.endlessScreen = new EndlessScreen(this);
+    this.junoComms = null;
+    this.tutorialController = new TutorialController(this);
 
     this._initDOM();
     this._loadLevel(this.currentLevelId, this.currentSeed);
@@ -118,10 +114,12 @@ export class NetCityClientUI {
 
     this.gameLoop = new GameLoop({
       getSim: () => this.sim,
+      isPaused: () => this._isModalOpen(),
       initialSpeed: this.gameSpeed,
       onTick: (events, sim) => {
         // Synchronize collision bursts for rendering
         this.collisionBursts = this.gameLoop.collisionBursts;
+        this._handleSimTickEvents(events, sim);
         if (sim && sim.tickNumber % 10 === 0) {
           this._updateCoinsDisplay();
         }
@@ -213,6 +211,9 @@ export class NetCityClientUI {
     if (name === 'game') {
       this._updateCanvasSize();
       this._fitCamera();
+    } else {
+      if (this.tutorialController) this.tutorialController.stop();
+      if (this.junoComms) this.junoComms.hide();
     }
   }
 
@@ -257,6 +258,7 @@ export class NetCityClientUI {
     if (this.endlessScreen) {
       this.endlessScreen.render();
     }
+    this._triggerJunoMoment('first_endless');
   }
 
   _startEndlessRun(seed = 'endless-' + Math.random().toString(36).substring(2, 8), tier = null) {
@@ -278,10 +280,6 @@ export class NetCityClientUI {
   _removeAllListeners() {
     this.interaction.removeAllListeners();
     this._listeners = [];
-  }
-
-  _drawRoundRect(ctx, x, y, w, h, r) {
-    drawRoundRect(ctx, x, y, w, h, r);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -337,6 +335,8 @@ export class NetCityClientUI {
               <button class="nc-action-btn nc-btn-speed" id="nc-btn-speed" title="Simulation Speed (1x / 2x / 4x)">1×</button>
             </div>
             <button class="nc-action-btn nc-btn-pause" id="nc-btn-pause" title="Shortcut: Space">Pause</button>
+            <button class="nc-action-btn nc-btn-undo" id="nc-btn-undo" title="Undo Last Wire">↩️ Undo</button>
+            <button class="nc-action-btn nc-btn-juno" id="nc-btn-juno" title="Chief Juno · Mentor Advice"><img src="./assets/images/ui/chief_juno.png" alt="Juno" class="nc-topbar-juno-img" /> Juno</button>
             <button class="nc-action-btn nc-btn-tutorial" id="nc-btn-tutorial" title="Networking Field Manual & Concept Guide">Guide</button>
             <button class="nc-action-btn" id="nc-btn-diagnostics" title="Bit's Diagnostic Toolkit (Test & Trace)">🔍 Trace</button>
             <button class="nc-action-btn nc-btn-reset-round" id="nc-btn-reset" title="Reset Level">🔄</button>
@@ -345,6 +345,7 @@ export class NetCityClientUI {
 
         <main class="nc-canvas-wrapper" id="nc-canvas-wrapper">
           <canvas class="nc-canvas" id="nc-canvas"></canvas>
+          <div class="nc-detective-case-bar" id="nc-detective-case-bar" style="display:none;"></div>
           <div class="nc-zoom-controls">
             <button class="nc-zoom-btn" id="nc-btn-zoom-in" title="Zoom in">+</button>
             <button class="nc-zoom-btn" id="nc-btn-zoom-out" title="Zoom out">-</button>
@@ -356,14 +357,13 @@ export class NetCityClientUI {
 
         <!-- Dedicated Bottom Dock Toolbar (outside canvas so map cannot be generated/rendered underneath) -->
         <footer class="nc-bottom-dock" id="nc-bottom-dock">
-          <div class="nc-hint-pill" id="nc-hint-bar" style="display: none;">
-            <span class="nc-hint-icon">🔍</span>
-            <span class="nc-hint-text" id="nc-hint-text"></span>
-          </div>
-          <div class="nc-dock-card">
-            <div class="nc-dock-category-switch">
-              <button class="nc-dock-cat-btn nc-dock-cat-active" id="nc-cat-cables">🔌 Cables</button>
-              <button class="nc-dock-cat-btn" id="nc-cat-devices">🖲️ Devices</button>
+          <div class="nc-dock-card" id="nc-dock-card">
+            <div class="nc-dock-header-row">
+              <div class="nc-dock-category-switch">
+                <button class="nc-dock-cat-btn nc-dock-cat-active" id="nc-cat-cables">🔌 Cables</button>
+                <button class="nc-dock-cat-btn" id="nc-cat-devices">🖲️ Devices</button>
+              </div>
+              <button class="nc-dock-toggle-btn" id="nc-dock-toggle" title="Collapse / Expand Toolbar" aria-label="Toggle Dock">▼</button>
             </div>
             <div class="nc-dock-tools">
               <div class="nc-dock-group" id="nc-dock-cables" style="display:flex; gap:6px;">
@@ -447,18 +447,26 @@ export class NetCityClientUI {
     this.screenGameEl = this.container.querySelector('#nc-screen-game');
 
     this.canvasWrapper = this.container.querySelector('#nc-canvas-wrapper');
+    this.canvasWrapperEl = this.canvasWrapper;
     this.canvas = this.container.querySelector('#nc-canvas');
+    this.detectiveCaseBarEl = this.container.querySelector('#nc-detective-case-bar');
     this.ctx = this.canvas.getContext('2d');
     this.titleEl = this.container.querySelector('#nc-title');
     this.coinsEl = this.container.querySelector('#nc-coins-display');
     this.goalEl = this.container.querySelector('#nc-goal-display');
-    this.hintBarEl = this.container.querySelector('#nc-hint-bar');
+    this.hintBarEl = null;
     this.tooltipEl = this.container.querySelector('#nc-drag-tooltip');
     this.modalEl = this.container.querySelector('#nc-modal-container');
     this.btnSpeed = this.container.querySelector('#nc-btn-speed');
     this.btnPause = this.container.querySelector('#nc-btn-pause');
+    this.btnUndo = this.container.querySelector('#nc-btn-undo');
+    this.btnJuno = this.container.querySelector('#nc-btn-juno');
     this.btnTutorial = this.container.querySelector('#nc-btn-tutorial');
     this.btnDiagnostics = this.container.querySelector('#nc-btn-diagnostics');
+
+    if (this.canvasWrapper) {
+      this.junoComms = new JunoCommsOverlay(this.canvasWrapper);
+    }
 
     this.wireBtns = {
       twisted_pair: this.container.querySelector('#nc-btn-twisted_pair'),
@@ -487,7 +495,10 @@ export class NetCityClientUI {
 
     // Subsystem Controllers Binding
     this.canvasRenderer = new CanvasRenderer(this.canvas, this.ctx, this.assets);
-    this.modalManager = new ModalManager(this.modalEl);
+    this.modalManager = new ModalManager(this.modalEl, {
+      onOpen: () => this._pauseForModal(),
+      onClose: () => this._resumeFromModal()
+    });
 
     this.hudController = new HUDController({
       titleEl: this.titleEl,
@@ -525,13 +536,30 @@ export class NetCityClientUI {
 
   _fitCamera() {
     if (!this.sim || !this.canvas) return;
+    const dockEl = this.container ? this.container.querySelector('#nc-bottom-dock') : null;
+    const dockH = (dockEl && typeof dockEl.offsetHeight === 'number' && dockEl.offsetHeight > 0) ? dockEl.offsetHeight : 100;
+    const bottomPadding = Math.max(130, dockH + 24);
     this.camera.fit(this.canvas.width, this.canvas.height, this.sim.width, this.sim.height, {
-      top: 50,
-      bottom: 60,
-      left: 20,
-      right: 20
-    }, 44);
+      top: 60,
+      bottom: bottomPadding,
+      left: 24,
+      right: 24
+    }, 12);
     this.baseSquareSize = this.camera.baseSquareSize;
+  }
+
+  /**
+   * Smoothly center camera on a given grid square (e.g. from clicking off-screen / dock edge indicators)
+   */
+  centerOnSquare(square) {
+    if (!this.sim || !this.camera || !this.canvas) return;
+    const sz = this.camera.baseSquareSize * this.camera.zoom;
+    const gx = square % this.sim.width;
+    const gy = Math.floor(square / this.sim.width);
+    const targetX = Math.round(this.canvas.width / 2 - (gx * sz + sz / 2));
+    const targetY = Math.round((this.canvas.height - 70) / 2 - (gy * sz + sz / 2));
+    this.camera.x = targetX;
+    this.camera.y = targetY;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -541,6 +569,13 @@ export class NetCityClientUI {
   _loadLevel(levelId, seed, customDef = null) {
     this.currentLevelId = levelId;
     this.currentSeed = seed;
+
+    this._isModalPaused = false;
+    this._wasPausedBeforeModal = false;
+    this._wasTimersPausedBeforeModal = false;
+
+    if (this.tutorialController) this.tutorialController.stop();
+    if (this.junoComms) this.junoComms.hide();
 
     // Reset simulation speed to 1x on level load
     if (this.gameLoop && typeof this.gameLoop.setSpeed === 'function') {
@@ -555,12 +590,16 @@ export class NetCityClientUI {
     const { levelDef, mapData } = generateLevelMap(levelId, seed, customDef);
     this.levelDef = levelDef;
     this.sim = new NetCitySimulation(mapData);
+    if (this.levelDef && (this.levelDef.id === '1.1' || this.levelDef.isTutorial)) {
+      this.sim.timersPaused = true;
+    }
 
     this.hudController.updateLevelHeader(this.levelDef);
     this._updateToolButtons();
     this._updateCoinsDisplay();
     this._updateCanvasSize();
     this._closeModal();
+    this._updateDetectiveCaseBar();
 
     // Auto-pause simulation at start so student can read the objective and lesson briefing
     if (!this.sim.isEndless) {
@@ -576,6 +615,196 @@ export class NetCityClientUI {
         this.btnPause.style.backgroundColor = '';
       }
       this._setHint(this.levelDef.hint);
+      this._triggerJunoMoment('first_endless');
+    }
+  }
+
+  _updateDetectiveCaseBar() {
+    if (!this.detectiveCaseBarEl) return;
+    if (this.currentLevelId !== '7.5' || !this.sim || !this.levelDef || !this.levelDef.detectiveCases) {
+      this.detectiveCaseBarEl.style.display = 'none';
+      this.detectiveCaseBarEl.innerHTML = '';
+      return;
+    }
+
+    const activeCase = this.sim.detectiveCaseNum || 1;
+    const casesHtml = [1, 2, 3, 4, 5, 6].map(num => `
+      <button type="button" class="nc-detective-case-btn${num === activeCase ? ' active' : ''}" data-case="${num}">
+        Case ${num}
+      </button>
+    `).join('');
+
+    this.detectiveCaseBarEl.innerHTML = `<span class="nc-detective-label">🔎 Cases:</span>${casesHtml}`;
+    this.detectiveCaseBarEl.style.display = 'flex';
+
+    this.detectiveCaseBarEl.querySelectorAll('.nc-detective-case-btn').forEach(btn => {
+      btn.onclick = () => {
+        const num = Number(btn.getAttribute('data-case'));
+        if (this.sim && typeof this.sim.loadDetectiveCase === 'function') {
+          this.sim.loadDetectiveCase(num);
+          this._updateDetectiveCaseBar();
+          this._updateCoinsDisplay();
+          this._render();
+          if (this.junoComms) {
+            const name = (this.stateManager && this.stateManager.playerName) || 'Apprentice';
+            this.junoComms.show(getJunoLevelIntro(`case_${num}`, { name }), {
+              badge: 'CHIEF JUNO · MENTOR',
+              variant: 'info',
+              durationMs: 7000
+            });
+          }
+        }
+      };
+    });
+  }
+
+  /**
+   * Summon Chief Juno's mentor guidance for the current level on demand,
+   * or replay the current step if an interactive tutorial is active.
+   * Gives the level hint only without repeating the start-of-level intro line.
+   */
+  showJunoComms() {
+    if (!this.junoComms) return;
+    if (this.tutorialController && this.tutorialController.active) {
+      if (typeof this.tutorialController._renderCurrentStep === 'function') {
+        this.tutorialController._renderCurrentStep();
+      }
+      return;
+    }
+    if (!this.levelDef) return;
+
+    // Give hint only, no need to repeat previous intro line
+    const hintText = this.levelDef.hint || (this.sim && this.sim.detectiveCaseNum
+      ? getJunoLevelIntro(`case_${this.sim.detectiveCaseNum}`, { name: (this.stateManager && this.stateManager.playerName) || 'Apprentice' })
+      : null);
+
+    this.junoComms.show(hintText || "Keep your cables organized and watch out for bottlenecks, Engineer!", {
+      badge: 'CHIEF JUNO · HINT',
+      variant: 'info',
+      durationMs: 12000,
+      dismissible: true
+    });
+  }
+
+  /**
+   * Show one-time Chief Juno moment lines (e.g., building_opens, low_timer, paused, etc.).
+   */
+  _triggerJunoMoment(momentId, vars = {}) {
+    if (!this.stateManager || !momentId) return false;
+    if (this.stateManager.hasSeenMoment(momentId)) return false;
+
+    const line = formatJunoLine(`juno.moment.${momentId}`, {
+      name: this.stateManager.playerName || 'Apprentice',
+      ...vars
+    });
+    if (!line || line === `juno.moment.${momentId}`) return false;
+
+    this.stateManager.markMomentSeen(momentId);
+    if (this.junoComms && (!this.tutorialController || !this.tutorialController.active)) {
+      this.junoComms.show(line, {
+        badge: 'CHIEF JUNO',
+        variant: 'info',
+        durationMs: 6500
+      });
+    }
+    return true;
+  }
+
+  /**
+   * Process simulation tick events for Chief Juno warnings, resolved reactions,
+   * safety-net recovery, off-screen checks, and tutorial auto-advance.
+   */
+  _handleSimTickEvents(events, sim) {
+    if (!sim) return;
+    const playerName = (this.stateManager && this.stateManager.playerName) || 'Apprentice';
+
+    // Tutorial live step triggers
+    if (this.tutorialController && this.tutorialController.active) {
+      if (sim.inFlightPackets && sim.inFlightPackets.length > 0) {
+        this.tutorialController.handleEvent('packet_in_flight');
+      }
+      if (Array.isArray(events) && events.some(e => e.type === 'PacketDelivered' || e.type === 'BonusAwarded')) {
+        this.tutorialController.handleEvent('coin_earned');
+      }
+    }
+
+    if (Array.isArray(events)) {
+      for (const ev of events) {
+        if (ev.type === 'BuildingOpened') {
+          this._triggerJunoMoment('building_opens');
+        } else if (ev.type === 'SafetyNetPaid') {
+          this._triggerJunoMoment('safety_net');
+        } else if (ev.type === 'EventWarning') {
+          const junoEvtId = SIM_EVENT_TO_JUNO_ID[ev.eventType];
+          if (junoEvtId && this.junoComms && (!this.tutorialController || !this.tutorialController.active)) {
+            this.junoComms.show(formatJunoLine(`juno.evt.${junoEvtId}.warn`, { name: playerName }), {
+              badge: 'CHIEF JUNO · ALERT',
+              variant: 'warn',
+              durationMs: 7500
+            });
+          }
+        } else if (ev.type === 'EventFixed') {
+          const junoEvtId = SIM_EVENT_TO_JUNO_ID[ev.eventType];
+          if (junoEvtId && this.junoComms && (!this.tutorialController || !this.tutorialController.active)) {
+            this.junoComms.show(formatJunoLine(`juno.evt.${junoEvtId}.fixed`, { name: playerName }), {
+              badge: 'CHIEF JUNO · CLEARED',
+              variant: 'fixed',
+              durationMs: 5000
+            });
+          }
+        }
+      }
+    }
+
+    // Periodic checks every 20 ticks (~1s)
+    if (sim.tickNumber % 20 === 0) {
+      // Low timer moment (< 25%) - suppressed while timers are paused during tutorials
+      if (!sim.timersPaused && (!this.tutorialController || !this.tutorialController.active)) {
+        for (const b of sim.buildings) {
+          if (b.state !== 'open') continue;
+          const maxTimer = b.timerPhase === 'first' ? b.firstTimerTicks : b.cycleTimerTicks;
+          if (maxTimer > 0 && (b.timerTicksLeft / maxTimer) <= 0.25) {
+            this._triggerJunoMoment('low_timer');
+            break;
+          }
+        }
+      }
+
+      // Off-screen or dock-obscured building moment
+      if (this.camera && this.canvas && this.canvas.width > 0 && this.canvas.height > 0 && !this.stateManager.hasSeenMoment('off_screen')) {
+        const sqSize = this.camera.baseSquareSize * this.camera.zoom;
+        if (sqSize > 0) {
+          const dockTop = this.canvas.height - 125;
+          const dockLeft = (this.canvas.width - 500) / 2;
+          const dockRight = (this.canvas.width + 500) / 2;
+          for (const b of sim.buildings) {
+            if (b.state !== 'open' && b.state !== 'construction' && !b.warning) continue;
+            const gx = b.square % sim.width;
+            const gy = Math.floor(b.square / sim.width);
+            const sx = gx * sqSize + this.camera.x;
+            const sy = gy * sqSize + this.camera.y;
+            const isOffScreen = sx < 0 || sy < 0 || sx > this.canvas.width || sy > this.canvas.height;
+            const isBehindDock = sx >= dockLeft && sx <= dockRight && sy >= dockTop;
+            if (isOffScreen || isBehindDock) {
+              this._triggerJunoMoment('off_screen');
+              break;
+            }
+          }
+        }
+      }
+
+      // Safety net check: if out of coins with an unconnected required building in campaign
+      if (!sim.isEndless && !sim.safetyNetGranted && sim.coins <= 0) {
+        const needsLink = sim.buildings.some(b =>
+          b.state === 'open' && b.required !== false &&
+          !Array.from(sim.wires.values()).some(w => w.buildingId === b.id || w.path.includes(b.square))
+        );
+        if (needsLink && typeof sim.grantSafetyNet === 'function') {
+          sim.grantSafetyNet(15);
+          this._updateCoinsDisplay();
+          this._triggerJunoMoment('safety_net');
+        }
+      }
     }
   }
 
@@ -645,28 +874,8 @@ export class NetCityClientUI {
     });
   }
 
-  _drawWirePath(ctx, path, color, sz, isFaded = false) {
-    drawWirePath(ctx, path, color, sz, isFaded, this.sim ? this.sim.width : 24);
-  }
-
-  _getPathPoint(path, progress, sz) {
-    return getPathPoint(path, progress, sz, this.sim ? this.sim.width : 24);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Campaign & Learn Screens
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  _getChaptersData() {
-    return getChaptersData();
-  }
-
   _renderCampaignScreen() {
     this.campaignScreen.render();
-  }
-
-  _renderChapterLevelsView() {
-    this.campaignScreen.renderChapterLevelsView();
   }
 
   _renderLearnScreen(topic = null) {
@@ -696,6 +905,7 @@ export class NetCityClientUI {
     this._closeModal();
     this._setScreen('learn');
     this._renderLearnScreen(topic);
+    this._triggerJunoMoment('under_the_hood');
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -712,22 +922,6 @@ export class NetCityClientUI {
 
   _showWireInspector(wire) {
     showWireInspector(this, wire);
-  }
-
-  _getDeviceConnections(device) {
-    return getDeviceConnections(this, device);
-  }
-
-  _renderDevicePortsHtml(device) {
-    return renderDevicePortsHtml(this, device);
-  }
-
-  _bindDisconnectButtons(device) {
-    bindDisconnectButtons(this, device);
-  }
-
-  _reopenCurrentDeviceInspector(device) {
-    reopenCurrentDeviceInspector(this, device);
   }
 
   _showSwitchNotebook(device) {
@@ -760,6 +954,7 @@ export class NetCityClientUI {
 
   _showDiagnosticsModal() {
     showDiagnosticsModal(this);
+    this._triggerJunoMoment('under_the_hood');
   }
 
   _showDhcpInspector(device) {
@@ -786,12 +981,68 @@ export class NetCityClientUI {
     showServerInspector(this, server);
   }
 
+  _isModalOpen() {
+    return Boolean(
+      (this.modalEl && this.modalEl.style && this.modalEl.style.display !== 'none' && this.modalEl.style.display !== '') ||
+      (this.sim && this.sim.modalOpen)
+    );
+  }
+
+  _pauseForModal() {
+    if (!this.sim) return;
+    if (!this._isModalPaused) {
+      this._isModalPaused = true;
+      this._wasPausedBeforeModal = Boolean(this.sim.paused);
+      this._wasTimersPausedBeforeModal = Boolean(this.sim.timersPaused);
+    }
+    this.sim.paused = true;
+    this.sim.timersPaused = true;
+    this.sim.modalOpen = true;
+    if (this.btnPause) {
+      this.btnPause.textContent = 'Resume';
+      this.btnPause.style.backgroundColor = 'var(--nc-green)';
+    }
+  }
+
+  _resumeFromModal() {
+    if (!this.sim) return;
+    this._isModalPaused = false;
+    this.sim.modalOpen = false;
+    if (!this._wasPausedBeforeModal && this.sim.status === 'playing') {
+      this.sim.paused = false;
+      if (this.btnPause) {
+        this.btnPause.textContent = 'Pause';
+        this.btnPause.style.backgroundColor = '';
+      }
+    }
+    const isTutorial = Boolean(
+      (this.levelDef && (this.levelDef.id === '1.1' || this.levelDef.isTutorial)) ||
+      (this.tutorialController && this.tutorialController.active)
+    );
+    this.sim.timersPaused = this._wasTimersPausedBeforeModal || isTutorial;
+  }
+
   _closeModal() {
+    if (this._briefingTimers) {
+      this._briefingTimers.forEach(t => clearTimeout(t));
+      this._briefingTimers = [];
+    }
     this.modalManager.close();
+    this._resumeFromModal();
   }
 
   destroy() {
     this.isDestroyed = true;
+    if (this._briefingTimers) {
+      this._briefingTimers.forEach(t => clearTimeout(t));
+      this._briefingTimers = [];
+    }
+    if (this.tutorialController) {
+      this.tutorialController.destroy();
+    }
+    if (this.junoComms) {
+      this.junoComms.destroy();
+    }
     if (this.gameLoop) {
       this.gameLoop.destroy();
     }

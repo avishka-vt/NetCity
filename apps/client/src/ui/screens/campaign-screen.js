@@ -8,6 +8,12 @@
  */
 
 import { ALL_LEVELS } from '../../../../../packages/content/src/levels.js';
+import {
+  getJunoChapterOpenLines,
+  getJunoChapterCloseLine,
+  formatJunoLine
+} from '../../../../../packages/content/src/juno-text.js';
+import { renderJunoInlineCard } from '../juno-dialog.js';
 
 /**
  * Return structured chapter definitions with core titles matching the theme mockup,
@@ -518,6 +524,9 @@ export class CampaignScreen {
               <h1 class="nc-campaign-heading">Campaign <span class="nc-sparkle">✨</span></h1>
               <p class="nc-campaign-subheading">7 chapters • 44 levels • Learn one concept at a time</p>
             </div>
+            ${(ui.stateManager && ui.stateManager.isReturningPlayer)
+              ? `<div class="nc-campaign-returning-juno">${renderJunoInlineCard(formatJunoLine('juno.moment.returning_player', { name: ui.stateManager.playerName || 'Apprentice' }), { badge: 'CHIEF JUNO · BACK ON DUTY', compact: true })}</div>`
+              : ''}
           </div>
 
           <!-- Horizontal Scrolling Road Map Container -->
@@ -556,6 +565,8 @@ export class CampaignScreen {
         ui.resetProgress();
       };
     }
+
+    this._bindProfileButton(() => this.render());
 
     ui.screenCampaignEl.querySelectorAll('.nc-chapter-card, .nc-btn-continue, .nc-btn-test-out').forEach(el => {
       el.onclick = (e) => {
@@ -944,6 +955,21 @@ export class CampaignScreen {
 
         ${testOutBannerHtml}
 
+        <!-- Chief Juno Non-Blocking Chapter Opening / Closing Briefing -->
+        <div class="nc-chapter-juno-banner">
+          ${(() => {
+            const pName = (ui.stateManager && ui.stateManager.playerName) || 'Apprentice';
+            const chapterLines = isChapterFinished
+              ? getJunoChapterCloseLine(ch.num, { name: pName })
+              : getJunoChapterOpenLines(ch.num, { name: pName });
+            return renderJunoInlineCard(chapterLines, {
+              badge: isChapterFinished ? 'CHIEF JUNO · CHAPTER COMPLETE' : 'CHIEF JUNO · MENTOR',
+              variant: isChapterFinished ? 'win' : 'briefing',
+              compact: true
+            });
+          })()}
+        </div>
+
         <!-- Interactive City Network Canvas Viewport -->
         <div class="nc-levels-map-viewport">
           <div class="nc-levels-map-canvas">
@@ -1110,6 +1136,8 @@ export class CampaignScreen {
       };
     }
 
+    this._bindProfileButton(() => this.renderChapterLevelsView());
+
     // Node click handlers: select node and reposition popover; double-click loads level
     ui.screenCampaignEl.querySelectorAll('.nc-level-node, .nc-level-card, .nc-svg-pedestal').forEach(nodeEl => {
       nodeEl.onclick = (e) => {
@@ -1152,5 +1180,24 @@ export class CampaignScreen {
         }, 60);
       }
     } catch (_) {}
+  }
+
+  _bindProfileButton(onUpdated) {
+    const { ui } = this;
+    const profileIcon = ui.screenCampaignEl.querySelector('.nc-user-profile-icon');
+    if (!profileIcon || !ui.stateManager) return;
+    profileIcon.style.cursor = 'pointer';
+    profileIcon.onclick = () => {
+      if (typeof prompt === 'function') {
+        const nextName = prompt(
+          'Enter your engineer name (for Chief Juno briefings):',
+          ui.stateManager.playerName || 'Apprentice'
+        );
+        if (nextName !== null) {
+          ui.stateManager.setPlayerName(nextName);
+          onUpdated();
+        }
+      }
+    };
   }
 }

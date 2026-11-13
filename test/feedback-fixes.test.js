@@ -42,11 +42,12 @@ test('Level Start: Auto-pause simulation and show Briefing Modal with Objective,
     assert.equal(ui.sim.paused, true, 'Simulation must start paused');
     assert.equal(ui.btnPause.textContent, 'Resume', 'Pause button must read Resume');
 
-    // Briefing modal must be opened
+    // Briefing modal must be opened with Chief Juno explaining the concept (First Step and Mission Objective removed)
     assert.equal(ui.modalEl.style.display, 'flex', 'Modal must be open');
-    assert.ok(ui.modalEl.innerHTML.includes('Mission Objective'), 'Must contain Mission Objective');
-    assert.ok(ui.modalEl.innerHTML.includes('The Concept'), 'Must contain Concept/Theory');
-    assert.ok(ui.modalEl.innerHTML.includes('First Step'), 'Must contain First Step hint');
+    assert.ok(ui.modalEl.innerHTML.includes('CHIEF JUNO') || ui.modalEl.innerHTML.includes('Chief Juno'), 'Must contain Chief Juno');
+    assert.ok(ui.modalEl.innerHTML.includes('THE CONCEPT'), 'Must contain Concept/Theory explained by Juno');
+    assert.ok(!ui.modalEl.innerHTML.includes('Mission Objective'), 'Must NOT contain Mission Objective');
+    assert.ok(!ui.modalEl.innerHTML.includes('First Step'), 'Must NOT contain First Step');
     assert.ok(ui.modalEl.innerHTML.includes('Start Level ▶'), 'Must contain Start Level button');
 
     // Clicking Start Level unpauses and closes briefing
@@ -930,4 +931,77 @@ test('Grid Sizing & Tag Cleanup: End devices have no floating pill tags, servers
   const testCam = new Camera();
   testCam.fit(1024, 462, 32, 18, { top: 50, bottom: 60, left: 20, right: 20 }, 44);
   assert.ok(testCam.baseSquareSize >= 44, 'Base square size must be at least 44px on small viewports');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal Timer Pausing
+// ─────────────────────────────────────────────────────────────────────────────
+test('Modals: All level timers pause when ANY popup or inspector is open, and resume on close', () => {
+  const mockDOM = createMockDOM();
+  const prevWindow = globalThis.window;
+  const prevDoc = globalThis.document;
+  globalThis.window = mockDOM.window;
+  globalThis.document = mockDOM.document;
+
+  try {
+    const container = mockDOM.document.createElement('div');
+    const ui = new NetCityClientUI(container);
+
+    // Load level 1.2 (timer-enabled level)
+    ui._loadLevel('1.2', 'timer-pause-seed');
+    assert.equal(ui.sim.modalOpen, true, 'Briefing modal is open on start');
+    assert.equal(ui._isModalOpen(), true, 'ui._isModalOpen() must return true');
+
+    const b = ui.sim.buildings[0];
+    const initialTimer = b.timerTicksLeft;
+
+    // Direct ticks while modal is open must NOT decrement building timers
+    ui.sim.tick();
+    ui.sim.tick();
+    assert.equal(b.timerTicksLeft, initialTimer, 'Building timer must not decrement while briefing modal is open');
+
+    // Close briefing modal and unpause
+    ui._closeModal();
+    ui.sim.paused = false;
+    assert.equal(ui.sim.modalOpen, false, 'Modal is closed');
+    assert.equal(ui.sim.paused, false, 'Game is unpaused');
+
+    // Tick simulation — timer should decrement
+    ui.sim.tick();
+    assert.equal(b.timerTicksLeft, initialTimer - 1, 'Building timer must decrement while game is playing');
+
+    // Now open Building Inspector
+    showBuildingInspector(ui, b);
+    assert.equal(ui._isModalOpen(), true, 'Inspector modal must be open');
+    assert.equal(ui.sim.modalOpen, true, 'sim.modalOpen must be true');
+    assert.equal(ui.sim.paused, true, 'sim.paused must be true while inspector is open');
+
+    const timerDuringInspector = b.timerTicksLeft;
+    for (let i = 0; i < 5; i++) {
+      ui.sim.tick();
+    }
+    assert.equal(b.timerTicksLeft, timerDuringInspector, 'Building timer must NOT decrement while inspector is open');
+
+    // Close inspector
+    ui._closeModal();
+    assert.equal(ui._isModalOpen(), false, 'Modal should be closed');
+    assert.equal(ui.sim.paused, false, 'Sim must automatically resume after closing modal');
+    assert.equal(ui.sim.modalOpen, false, 'sim.modalOpen must be false');
+
+    // Tick once more — timer decrements again
+    ui.sim.tick();
+    assert.equal(b.timerTicksLeft, timerDuringInspector - 1, 'Building timer resumes decrementing after modal closes');
+
+    // Test case: Player had manually paused BEFORE opening modal
+    ui.sim.paused = true;
+    showBuildingInspector(ui, b);
+    assert.equal(ui._isModalOpen(), true);
+    ui._closeModal();
+    assert.equal(ui.sim.paused, true, 'Sim must remain paused if it was manually paused before modal opened');
+
+    ui.destroy();
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDoc;
+  }
 });

@@ -6,6 +6,9 @@
  * and starts simulation.
  */
 
+import { getJunoLevelIntro } from '../../../../../packages/content/src/juno-text.js';
+import { CHIEF_JUNO_PORTRAIT } from '../juno-dialog.js';
+
 export const CONCEPT_THEORY = {
   first_link: {
     badge: 'Basic Cabling',
@@ -104,6 +107,49 @@ export const CONCEPT_THEORY = {
   }
 };
 
+/**
+ * Break down large conceptual paragraphs into small, natural SMS / text-message bubbles
+ */
+export function splitTheoryIntoMessages(theoryHtml) {
+  if (!theoryHtml) return [];
+  const sentences = theoryHtml
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9<])/g)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (sentences.length <= 1) {
+    return [theoryHtml];
+  }
+
+  const result = [];
+  for (let i = 0; i < sentences.length; i++) {
+    const s = sentences[i];
+    if (result.length > 0 && s.length < 32 && !s.includes('!') && !s.includes('?')) {
+      result[result.length - 1] += ' ' + s;
+    } else {
+      result.push(s);
+    }
+  }
+  return result;
+}
+
+/**
+ * Generates HTML for an individual phone chat message bubble
+ */
+export function createPhoneMessageHtml(msg) {
+  const isIntro = Boolean(msg.isIntro);
+  const bubbleClass = isIntro ? 'nc-phone-bubble nc-phone-bubble-intro' : 'nc-phone-bubble';
+  const timeLabel = isIntro ? '9:41 AM · Juno' : (msg.time ? `${msg.time} · Delivered ✓✓` : '9:42 AM · Delivered ✓✓');
+  return `
+    <div class="nc-phone-msg">
+      <div class="${bubbleClass}">
+        ${msg.text}
+      </div>
+      <span class="nc-phone-msg-time">${timeLabel}</span>
+    </div>
+  `;
+}
+
 export function showLevelBriefingModal(ui, levelDef) {
   if (!ui || !ui.modalEl || !levelDef) return;
 
@@ -115,61 +161,254 @@ export function showLevelBriefingModal(ui, levelDef) {
     theory: levelDef.learningMoment || 'Fulfill building quotas through proper cabling, topology, and device configurations.'
   };
 
-  const reqBuildings = (levelDef.start || []).filter(b => b.required !== false).length +
-                       (levelDef.spawns || []).filter(b => b.required !== false).length;
-  const buildingLabel = reqBuildings > 0 ? `${reqBuildings} required buildings` : 'all required campus buildings';
+  const playerName = (ui.stateManager && ui.stateManager.playerName) || 'Apprentice';
+  const junoIntroKey = levelDef.id === '7.5' && ui.sim && ui.sim.detectiveCaseNum
+    ? `case_${ui.sim.detectiveCaseNum}`
+    : levelDef.id;
+  const junoIntroLine = getJunoLevelIntro(junoIntroKey, { name: playerName });
+
+  // Clean title: remove redundant level ID prefix if title already starts with e.g. "1.2"
+  const cleanTitle = (levelDef.title || '').replace(new RegExp(`^${levelDef.id}[\\s—–-]+`, 'i'), '').trim();
+  const displayTitle = `${levelDef.id} — ${cleanTitle || levelDef.title}`;
+  const theoryMessages = splitTheoryIntoMessages(theoryMeta.theory);
+
+  // Compile sequential message list: Juno greeting/intro first, then theory sentences
+  const allMessages = [];
+  if (junoIntroLine) {
+    allMessages.push({ text: `"${junoIntroLine}"`, isIntro: true, time: '9:41 AM' });
+  }
+  theoryMessages.forEach(msg => {
+    allMessages.push({ text: msg, isIntro: false, time: '9:42 AM' });
+  });
+
+  // Clean up any previously active briefing timers
+  if (ui._briefingTimers) {
+    ui._briefingTimers.forEach(t => clearTimeout(t));
+  }
+  ui._briefingTimers = [];
+
+  const clearAllTimers = () => {
+    if (ui._briefingTimers) {
+      ui._briefingTimers.forEach(t => clearTimeout(t));
+      ui._briefingTimers = [];
+    }
+  };
 
   ui.modalEl.style.display = 'flex';
+  if (ui && typeof ui._pauseForModal === 'function') {
+    ui._pauseForModal();
+  }
   ui.modalEl.innerHTML = `
-    <div class="nc-card nc-briefing-card">
-      <button class="nc-modal-close-icon" id="nc-briefing-x-close" title="Close & Start">✕</button>
-
-      <div>
-        <div class="nc-briefing-badge">📖 ${theoryMeta.badge}</div>
-        <h2 class="nc-card-title" style="color:#ffffff; font-size:1.45rem; margin-top:2px;">
-          ${levelDef.id} — ${levelDef.title}
-        </h2>
-      </div>
-
-      <!-- 1. Objective Box -->
-      <div class="nc-briefing-section nc-briefing-objective">
-        <div style="font-weight:700; color:#34d399; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
-          🎯 Mission Objective
-        </div>
-        <div>
-          Connect ${buildingLabel} and fulfill their <strong>Packet Delivery Quotas</strong> before timers run out!
+    <div class="nc-phone-frame" id="nc-briefing-phone">
+      <!-- Status Bar with Time, Dynamic Island, Signal, Battery -->
+      <div class="nc-phone-status-bar">
+        <span class="nc-phone-time-clock">9:41</span>
+        <div class="nc-phone-island"></div>
+        <div class="nc-phone-status-icons">
+          <span>5G</span>
+          <span>📶</span>
+          <span>100%</span>
+          <span>🔋</span>
         </div>
       </div>
 
-      <!-- 2. Concept & Theory Box -->
-      <div class="nc-briefing-section nc-briefing-theory">
-        <div style="font-weight:700; color:#38bdf8; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
-          💡 The Concept: ${theoryMeta.concept}
+      <!-- Phone Messenger Contact Header -->
+      <div class="nc-phone-header">
+        <div class="nc-phone-contact">
+          <div class="nc-phone-avatar-wrap">
+            <img src="${CHIEF_JUNO_PORTRAIT}" alt="Chief Juno" class="nc-phone-avatar" />
+            <span class="nc-phone-online-dot"></span>
+          </div>
+          <div class="nc-phone-contact-info">
+            <div class="nc-phone-contact-name">
+              Chief Juno <span style="font-size:0.78rem;">🛡️</span>
+            </div>
+            <div class="nc-phone-contact-status">
+              CHIEF JUNO · THE CONCEPT
+            </div>
+          </div>
         </div>
-        <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.5;">
-          ${theoryMeta.theory}
+        <button class="nc-phone-close-btn" id="nc-briefing-x-close" title="Close & Start">✕</button>
+      </div>
+
+      <!-- Phone Chat Canvas / Messages Scroll Area -->
+      <div class="nc-phone-chat-body" id="nc-phone-chat-body">
+        <div class="nc-phone-date-pill">
+          📖 ${theoryMeta.badge} · ${displayTitle}
+        </div>
+        <div class="nc-phone-concept-banner">
+          💡 THE CONCEPT: ${theoryMeta.concept}
+        </div>
+
+        ${allMessages.length > 1 ? `
+          <div class="nc-phone-tap-hint" id="nc-phone-tap-hint" title="Tap to show all messages">
+            Tap chat to reveal all ⏩
+          </div>
+        ` : ''}
+
+        <!-- Message Thread -->
+        <div class="nc-phone-messages" id="nc-phone-messages"></div>
+
+        <!-- Animated Typing Indicator -->
+        <div class="nc-phone-typing" id="nc-phone-typing" style="display: none;">
+          <div class="nc-phone-typing-bubble">
+            <span class="nc-typing-dot"></span>
+            <span class="nc-typing-dot"></span>
+            <span class="nc-typing-dot"></span>
+          </div>
+          <span class="nc-phone-typing-status">Chief Juno is typing...</span>
+        </div>
+
+        <!-- Completion Stamp -->
+        <div class="nc-phone-end-stamp" id="nc-phone-end-stamp" style="display: ${allMessages.length <= 1 ? 'block' : 'none'};">
+          All messages received · Ready to build!
         </div>
       </div>
 
-      <!-- 3. Initial Hint / Tip -->
-      <div class="nc-briefing-section nc-briefing-hint">
-        <div style="font-weight:700; color:#f59e0b; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
-          ⚡ First Step
-        </div>
-        <div style="color:#fef3c7; font-size:0.86rem;">
-          ${levelDef.hint}
-        </div>
-      </div>
-
-      <div class="nc-card-actions" style="margin-top:6px; justify-content:center;">
-        <button class="nc-btn nc-btn-primary" id="nc-btn-start-level" style="padding:10px 32px; font-size:1.02rem; font-weight:700; box-shadow:0 4px 18px rgba(16,185,129,0.4);">
-          Start Level ▶
+      <!-- Phone Bottom Bar: Quick-Reply Action Button & Home Bar -->
+      <div class="nc-phone-footer">
+        <button class="nc-btn nc-phone-action-btn ${allMessages.length <= 1 ? 'nc-btn-ready' : ''}" id="nc-btn-start-level">
+          <span>Start Level ▶</span>
         </button>
+        <div class="nc-phone-home-indicator"></div>
       </div>
     </div>
   `;
 
+  const chatBody = ui.modalEl.querySelector('#nc-phone-chat-body') || ui.modalEl.querySelector('.nc-phone-chat-body');
+  const messagesContainer = ui.modalEl.querySelector('#nc-phone-messages');
+  const typingEl = ui.modalEl.querySelector('#nc-phone-typing');
+  const endStamp = ui.modalEl.querySelector('#nc-phone-end-stamp');
+  const tapHint = ui.modalEl.querySelector('#nc-phone-tap-hint');
+  const startBtn = ui.modalEl.querySelector('#nc-btn-start-level');
+  const xBtn = ui.modalEl.querySelector('#nc-briefing-x-close');
+
+  const scrollToBottom = () => {
+    if (chatBody) {
+      try {
+        if (typeof chatBody.scrollTo === 'function') {
+          chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
+        } else {
+          chatBody.scrollTop = chatBody.scrollHeight;
+        }
+      } catch {
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+    }
+  };
+
+  const appendMessage = (msg) => {
+    if (!messagesContainer) return;
+    const html = createPhoneMessageHtml(msg);
+    if (typeof messagesContainer.insertAdjacentHTML === 'function') {
+      messagesContainer.insertAdjacentHTML('beforeend', html);
+    } else {
+      messagesContainer.innerHTML = (messagesContainer.innerHTML || '') + html;
+    }
+  };
+
+  let currentIndex = 0;
+  if (allMessages.length > 0) {
+    appendMessage(allMessages[0]);
+    currentIndex = 1;
+  }
+
+  // Reveal all messages immediately (used when skipping or in testMode)
+  const revealAll = () => {
+    clearAllTimers();
+    if (typingEl) typingEl.style.display = 'none';
+    if (tapHint) tapHint.style.display = 'none';
+
+    while (currentIndex < allMessages.length) {
+      appendMessage(allMessages[currentIndex]);
+      currentIndex++;
+    }
+
+    if (endStamp) endStamp.style.display = 'block';
+    if (startBtn && startBtn.classList) startBtn.classList.add('nc-btn-ready');
+    scrollToBottom();
+  };
+
+  // Expose revealAll method on ui for external trigger or tests
+  ui._revealAllBriefingMessages = revealAll;
+
+  // If in automated test mode or only 1 message, reveal everything immediately
+  if (ui.testMode) {
+    revealAll();
+  } else if (allMessages.length > 1) {
+    // Sequential delivery: first message is visible immediately, schedule subsequent messages
+    const scheduleNext = () => {
+      if (currentIndex >= allMessages.length) {
+        if (typingEl) typingEl.style.display = 'none';
+        if (tapHint) tapHint.style.display = 'none';
+        if (endStamp) endStamp.style.display = 'block';
+        if (startBtn && startBtn.classList) startBtn.classList.add('nc-btn-ready');
+        scrollToBottom();
+        return;
+      }
+
+      // Show typing indicator
+      if (typingEl) {
+        typingEl.style.display = 'flex';
+        scrollToBottom();
+      }
+
+      // After typing indicator delay (~1.3s), deliver the message
+      const typingTimer = setTimeout(() => {
+        if (typingEl) typingEl.style.display = 'none';
+
+        if (currentIndex < allMessages.length) {
+          appendMessage(allMessages[currentIndex]);
+          currentIndex++;
+          scrollToBottom();
+        }
+
+        if (currentIndex < allMessages.length) {
+          // Pause briefly (~800ms) before Juno starts typing the next message
+          const pauseTimer = setTimeout(() => {
+            scheduleNext();
+          }, 800);
+          ui._briefingTimers.push(pauseTimer);
+        } else {
+          // All delivered
+          if (tapHint) tapHint.style.display = 'none';
+          if (endStamp) endStamp.style.display = 'block';
+          if (startBtn && startBtn.classList) startBtn.classList.add('nc-btn-ready');
+          scrollToBottom();
+        }
+      }, 1300);
+
+      ui._briefingTimers.push(typingTimer);
+    };
+
+    // Begin typing the second message after ~800ms
+    const initialTimer = setTimeout(() => {
+      scheduleNext();
+    }, 800);
+    ui._briefingTimers.push(initialTimer);
+  }
+
+  // Tap-to-reveal-all: tapping anywhere on the chat body fast-forwards all messages
+  if (tapHint) {
+    tapHint.onclick = (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      revealAll();
+    };
+  }
+
+  if (chatBody) {
+    chatBody.onclick = (e) => {
+      if (e && e.target && e.target.closest && (e.target.closest('button') || e.target.closest('a'))) {
+        return;
+      }
+      if (currentIndex < allMessages.length) {
+        revealAll();
+      }
+    };
+  }
+
   const onStart = () => {
+    clearAllTimers();
     ui._closeModal();
     if (ui.sim) {
       ui.sim.paused = false;
@@ -179,11 +418,18 @@ export function showLevelBriefingModal(ui, levelDef) {
       ui.btnPause.style.backgroundColor = '';
     }
     ui._setHint(levelDef.hint);
+    if (levelDef.id === '1.1' && ui.tutorialController) {
+      ui.tutorialController.start();
+    } else if (ui.junoComms && junoIntroLine) {
+      ui.junoComms.show(junoIntroLine, {
+        badge: 'CHIEF JUNO · MENTOR',
+        variant: 'info',
+        durationMs: 12000,
+        dismissible: true
+      });
+    }
   };
 
-  const startBtn = ui.modalEl.querySelector('#nc-btn-start-level');
   if (startBtn) startBtn.onclick = onStart;
-
-  const xBtn = ui.modalEl.querySelector('#nc-briefing-x-close');
   if (xBtn) xBtn.onclick = onStart;
 }

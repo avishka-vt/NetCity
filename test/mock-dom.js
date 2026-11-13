@@ -121,6 +121,21 @@ export function createMockDOM() {
       return child;
     }
 
+    insertAdjacentHTML(position, html) {
+      if (position === 'beforeend') {
+        this.innerHTML = (this.innerHTML || '') + html;
+        let p = this.parentNode;
+        while (p) {
+          if (typeof p._innerHTML === 'string') {
+            p._innerHTML += html;
+          }
+          p = p.parentNode;
+        }
+      } else if (position === 'afterbegin') {
+        this.innerHTML = html + (this.innerHTML || '');
+      }
+    }
+
     removeChild(child) {
       const idx = this.children.indexOf(child);
       if (idx !== -1) {
@@ -237,13 +252,21 @@ export function createMockDOM() {
         clearRect() {},
         roundRect() {},
         beginPath() {},
+        closePath() {},
         moveTo() {},
         lineTo() {},
         stroke() {},
         arc() {},
+        ellipse() {},
         fill() {},
         fillText() {},
         setLineDash() {},
+        createRadialGradient() {
+          return { addColorStop() {} };
+        },
+        createLinearGradient() {
+          return { addColorStop() {} };
+        },
         save() {},
         restore() {},
         translate() {},

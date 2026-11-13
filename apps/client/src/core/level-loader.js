@@ -41,6 +41,8 @@ export function findValidSquare(w, h, serverSq, range, used, rng = Math.random.b
     const y = Math.floor(rng() * h);
     const sq = y * w + x;
     if (river && x >= river[0] && x <= river[1]) continue;
+    // Avoid bottom-center area where floating dock toolbar sits when map is tall enough
+    if (h >= 6 && y >= h - 1 && x >= Math.floor(w * 0.3) && x <= Math.floor(w * 0.7)) continue;
     const d = Math.abs(x - anchorX) + Math.abs(y - anchorY);
     if (!used.has(sq) && d >= minD && d <= maxD && Math.max(Math.abs(x - anchorX), Math.abs(y - anchorY)) >= 2) {
       return sq;
@@ -52,11 +54,38 @@ export function findValidSquare(w, h, serverSq, range, used, rng = Math.random.b
     for (let x = minX; x <= maxX; x++) {
       const sq = y * w + x;
       if (river && x >= river[0] && x <= river[1]) continue;
+      if (h >= 6 && y >= h - 1 && x >= Math.floor(w * 0.3) && x <= Math.floor(w * 0.7)) continue;
       if (!used.has(sq)) return sq;
     }
   }
 
   return (Math.min(sy + minD, h - 1)) * w + minX;
+}
+
+function buildBuildingEntry(raw, id, sq, isReq, opensAtTick, levelDef) {
+  return {
+    id,
+    name: raw.name || undefined,
+    type: raw.type,
+    square: sq,
+    required: isReq,
+    targetServerId: raw.targetServerId || null,
+    targetHostname: raw.targetHostname || raw.domain || null,
+    targetPort: raw.targetPort || raw.port || null,
+    zone: raw.zone || undefined,
+    isRogue: Boolean(raw.isRogue),
+    ip: raw.ip !== undefined ? raw.ip : undefined,
+    subnet: raw.subnet || undefined,
+    defaultGateway: raw.defaultGateway !== undefined ? raw.defaultGateway : undefined,
+    side: raw.side || undefined,
+    mac: raw.mac || null,
+    opensAtTick,
+    quota: raw.type === 'classroom' ? 3 : 2,
+    firstTimerTicks: levelDef.firstTimerTicks,
+    cycleTimerTicks: levelDef.cycleTimerTicks,
+    deadlineTicks: levelDef.deadlineTicks,
+    requestIntervalTicks: raw.type === 'classroom' ? 40 : 60
+  };
 }
 
 /**
@@ -119,30 +148,7 @@ export function generateLevelMap(levelId, seed, customDef = null) {
     used.add(sq);
     const isReq = b.required !== false && requiredTargetingServer < maxDeviceCapacity;
     if (isReq) requiredTargetingServer++;
-
-    buildings.push({
-      id: b.id,
-      name: b.name || undefined,
-      type: b.type,
-      square: sq,
-      required: isReq,
-      targetServerId: b.targetServerId || null,
-      targetHostname: b.targetHostname || b.domain || null,
-      targetPort: b.targetPort || b.port || null,
-      zone: b.zone || undefined,
-      isRogue: Boolean(b.isRogue),
-      ip: b.ip !== undefined ? b.ip : undefined,
-      subnet: b.subnet || undefined,
-      defaultGateway: b.defaultGateway !== undefined ? b.defaultGateway : undefined,
-      side: b.side || undefined,
-      mac: b.mac || null,
-      opensAtTick: 0,
-      quota: b.type === 'classroom' ? 3 : 2,
-      firstTimerTicks: levelDef.firstTimerTicks,
-      cycleTimerTicks: levelDef.cycleTimerTicks,
-      deadlineTicks: levelDef.deadlineTicks,
-      requestIntervalTicks: b.type === 'classroom' ? 40 : 60
-    });
+    buildings.push(buildBuildingEntry(b, b.id, sq, isReq, 0, levelDef));
   }
 
   // Spawn buildings
@@ -152,30 +158,7 @@ export function generateLevelMap(levelId, seed, customDef = null) {
     used.add(sq);
     const isReq = s.required !== false && requiredTargetingServer < maxDeviceCapacity;
     if (isReq) requiredTargetingServer++;
-
-    buildings.push({
-      id: nextId++,
-      name: s.name || undefined,
-      type: s.type,
-      square: sq,
-      required: isReq,
-      targetServerId: s.targetServerId || null,
-      targetHostname: s.targetHostname || s.domain || null,
-      targetPort: s.targetPort || s.port || null,
-      zone: s.zone || undefined,
-      isRogue: Boolean(s.isRogue),
-      ip: s.ip !== undefined ? s.ip : undefined,
-      subnet: s.subnet || undefined,
-      defaultGateway: s.defaultGateway !== undefined ? s.defaultGateway : undefined,
-      side: s.side || undefined,
-      mac: s.mac || null,
-      opensAtTick: s.tick,
-      quota: s.type === 'classroom' ? 3 : 2,
-      firstTimerTicks: levelDef.firstTimerTicks,
-      cycleTimerTicks: levelDef.cycleTimerTicks,
-      deadlineTicks: levelDef.deadlineTicks,
-      requestIntervalTicks: s.type === 'classroom' ? 40 : 60
-    });
+    buildings.push(buildBuildingEntry(s, nextId++, sq, isReq, s.tick, levelDef));
   }
 
   // Wall/Pond generation — seeded rectangular obstacle blocks

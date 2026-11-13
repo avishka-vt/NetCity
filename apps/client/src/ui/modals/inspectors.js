@@ -9,6 +9,14 @@
 import { WIRE_CATALOG } from '../../../../../packages/content/src/wires.js';
 import { DEVICE_CATALOG } from '../../../../../packages/content/src/devices.js';
 
+function openModal(ui) {
+  if (!ui || !ui.modalEl) return;
+  ui.modalEl.style.display = 'flex';
+  if (typeof ui._pauseForModal === 'function') {
+    ui._pauseForModal();
+  }
+}
+
 /**
  * Collect all active wire links connected to a device
  */
@@ -215,7 +223,7 @@ export function reopenCurrentDeviceInspector(ui, device) {
 
 export function showSwitchNotebook(ui, device) {
   if (!device || device.type !== 'switch' || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   let rowsHtml = '';
   if (device.macTable && device.macTable.size > 0) {
@@ -310,7 +318,7 @@ export function showSwitchNotebook(ui, device) {
 
 export function showBuildingInspector(ui, b) {
   if (!b || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   const ch = (ui.levelDef && ui.levelDef.chapter) || 1;
   const isIpLevel = ch >= 3;
@@ -468,7 +476,7 @@ export function showBuildingInspector(ui, b) {
 
 export function showRouterInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   const hasWire = Boolean(device.uplinkWireId);
   const wire = hasWire ? ui.sim.wires.get(device.uplinkWireId) : null;
@@ -623,7 +631,7 @@ export function showRouterInspector(ui, device) {
 
 export function showFirewallInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   let rulesHtml = '';
   if (device.rules && device.rules.length > 0) {
@@ -732,7 +740,7 @@ export function showFirewallInspector(ui, device) {
 
 export function showVpnInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   ui.modalEl.innerHTML = `
     <div class="nc-card" style="max-width:440px; text-align:left;">
@@ -763,7 +771,7 @@ export function showVpnInspector(ui, device) {
 
 export function showLoadBalancerInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   let backendsHtml = '';
   const servers = ui.sim.servers || [];
@@ -820,7 +828,7 @@ export function showLoadBalancerInspector(ui, device) {
 
 export function showBackupPowerInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   ui.modalEl.innerHTML = `
     <div class="nc-card" style="max-width:440px; text-align:left;">
@@ -851,7 +859,7 @@ export function showBackupPowerInspector(ui, device) {
 
 export function showDhcpInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   let leasesRows = '';
   if (device.leases && device.leases.size > 0) {
@@ -931,7 +939,7 @@ export function showDhcpInspector(ui, device) {
 
 export function showDnsInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   const hasWire = Boolean(device.uplinkWireId);
   const wire = hasWire ? ui.sim.wires.get(device.uplinkWireId) : null;
@@ -999,7 +1007,7 @@ export function showDnsInspector(ui, device) {
 
 export function showWebServerInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   const hasWire = Boolean(device.uplinkWireId);
   const wire = hasWire ? ui.sim.wires.get(device.uplinkWireId) : null;
@@ -1045,7 +1053,7 @@ export function showWebServerInspector(ui, device) {
 
 export function showEmailServerInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   const hasWire = Boolean(device.uplinkWireId);
   const wire = hasWire ? ui.sim.wires.get(device.uplinkWireId) : null;
@@ -1091,7 +1099,7 @@ export function showEmailServerInspector(ui, device) {
 
 export function showDeviceInspector(ui, device) {
   if (!device || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   const spec = DEVICE_CATALOG[device.type] || { name: 'Device', icon: '📦' };
   const hasWire = Boolean(device.uplinkWireId);
@@ -1138,7 +1146,7 @@ export function showDeviceInspector(ui, device) {
 
 export function showServerInspector(ui, server) {
   if (!server || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   ui.modalEl.innerHTML = `
     <div class="nc-card" style="max-width:440px; text-align:left;">
@@ -1171,7 +1179,7 @@ export function showServerInspector(ui, server) {
 
 export function showWireInspector(ui, wire) {
   if (!wire || !ui.modalEl) return;
-  ui.modalEl.style.display = 'flex';
+  openModal(ui);
 
   let fromLabel = 'Building';
   if (wire.buildingId) {

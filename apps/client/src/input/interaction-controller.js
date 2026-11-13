@@ -51,6 +51,9 @@ export class InteractionController {
         if (ui.levelDef.wiresAllowed.includes(key)) {
           ui.activeTool = key;
           ui._updateToolButtons();
+          if (ui.tutorialController) {
+            ui.tutorialController.handleEvent('wire_tool_selected');
+          }
         }
       });
     }
@@ -99,6 +102,18 @@ export class InteractionController {
       });
     }
 
+    // 4.5. Dock Collapse / Expand Toggle Button
+    const dockToggle = ui.container.querySelector('#nc-dock-toggle');
+    const dockCard = ui.container.querySelector('#nc-dock-card');
+    if (dockToggle && dockCard) {
+      this.addListener(dockToggle, 'click', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        const isCollapsed = dockCard.classList.toggle('nc-dock-collapsed');
+        dockToggle.textContent = isCollapsed ? '▲' : '▼';
+        dockToggle.title = isCollapsed ? 'Expand Toolbar' : 'Collapse Toolbar';
+      });
+    }
+
     // 5. Simulation Speed Toggle (1x -> 2x -> 4x)
     const btnSpeed = ui.container.querySelector('#nc-btn-speed');
     if (btnSpeed) {
@@ -113,29 +128,61 @@ export class InteractionController {
       });
     }
 
-    // 6. Tutorial / Guide button
+    // 6. Chief Juno Mentor button
+    const btnJuno = ui.btnJuno || ui.container.querySelector('#nc-btn-juno');
+    if (btnJuno) {
+      this.addListener(btnJuno, 'click', () => {
+        if (typeof ui.showJunoComms === 'function') {
+          ui.showJunoComms();
+        }
+        if (typeof btnJuno.blur === 'function') btnJuno.blur();
+      });
+    }
+
+    // 7. Tutorial / Guide button
     if (ui.btnTutorial) {
       this.addListener(ui.btnTutorial, 'click', () => {
         ui._showTutorialModal();
       });
     }
 
-    // 7. Diagnostics button
+    // 8. Diagnostics button
     if (ui.btnDiagnostics) {
       this.addListener(ui.btnDiagnostics, 'click', () => {
         ui._showDiagnosticsModal();
       });
     }
 
-    // 8. Pause button
+    // 9. Pause button
     if (ui.btnPause) {
       this.addListener(ui.btnPause, 'click', () => {
         if (ui.sim) {
           ui.sim.paused = !ui.sim.paused;
           ui.btnPause.textContent = ui.sim.paused ? 'Resume' : 'Pause';
           ui.btnPause.style.backgroundColor = ui.sim.paused ? '#b91c1c' : '';
+          if (ui.sim.paused && typeof ui._triggerJunoMoment === 'function') {
+            ui._triggerJunoMoment('paused');
+          }
           if (typeof ui.btnPause.blur === 'function') ui.btnPause.blur();
         }
+      });
+    }
+
+    // 8.5 Undo Last Wire button
+    const btnUndo = ui.btnUndo || ui.container.querySelector('#nc-btn-undo');
+    if (btnUndo) {
+      this.addListener(btnUndo, 'click', () => {
+        if (ui.sim && typeof ui.sim.undoLastWire === 'function') {
+          const undone = ui.sim.undoLastWire();
+          if (undone && undone.success) {
+            ui._updateCoinsDisplay();
+            if (ui._render) ui._render();
+          }
+        }
+        if (ui.tutorialController) {
+          ui.tutorialController.handleEvent('undo_clicked');
+        }
+        if (typeof btnUndo.blur === 'function') btnUndo.blur();
       });
     }
 
@@ -248,6 +295,21 @@ export class InteractionController {
 
     const onPointerDown = (e) => {
       if (e.button !== 0 || !ui.sim) return;
+
+      // 0. Check click on screen-edge indicators to auto-center camera on building
+      if (ui.canvasRenderer && Array.isArray(ui.canvasRenderer.edgeIndicators) && ui.canvas) {
+        const rect = ui.canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        for (const ind of ui.canvasRenderer.edgeIndicators) {
+          const d2 = (clickX - ind.x) ** 2 + (clickY - ind.y) ** 2;
+          if (d2 <= (ind.radius + 10) ** 2) {
+            ui.centerOnSquare(ind.square);
+            return;
+          }
+        }
+      }
+
       const { x, y, square } = getGridPos(e.clientX, e.clientY);
 
       // 0. Move tool placement
@@ -344,6 +406,7 @@ export class InteractionController {
         const isWireTool = ['twisted_pair', 'coaxial', 'multimode_fiber', 'single_mode_fiber'].includes(ui.activeTool);
         if (isWireTool) {
           ui.isDragging = true;
+          if (typeof document !== 'undefined' && document.body) document.body.classList.add('nc-dragging');
           ui.dragSourceType = 'device';
           ui.dragSourceId = device.id;
           ui.dragPath = [square];
@@ -376,6 +439,7 @@ export class InteractionController {
         }
 
         ui.isDragging = true;
+        if (typeof document !== 'undefined' && document.body) document.body.classList.add('nc-dragging');
         ui.dragSourceType = 'building';
         ui.dragSourceId = building.id;
         ui.dragBuildingId = building.id;
@@ -418,6 +482,19 @@ export class InteractionController {
       ui.cursorSquare = (x >= 0 && x < ui.sim.width && y >= 0 && y < ui.sim.height) ? square : null;
       ui.cursorPos = { x: e.clientX, y: e.clientY };
 
+      // Edge indicator hover cursor
+      if (ui.canvas && ui.canvasRenderer && Array.isArray(ui.canvasRenderer.edgeIndicators)) {
+        const rect = ui.canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        const isHovering = ui.canvasRenderer.edgeIndicators.some(ind => ((clickX - ind.x) ** 2 + (clickY - ind.y) ** 2) <= (ind.radius + 8) ** 2);
+        if (isHovering) {
+          ui.canvas.style.cursor = 'pointer';
+        } else if (!ui.isDragging && !ui.isPanning) {
+          ui.canvas.style.cursor = 'default';
+        }
+      }
+
       if (ui.isPanning) {
         ui.camera.x = e.clientX - ui.panStart.x;
         ui.camera.y = e.clientY - ui.panStart.y;
@@ -450,6 +527,10 @@ export class InteractionController {
     };
 
     const onPointerUp = (e) => {
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.remove('nc-dragging');
+      }
+
       if (ui.isPanning) {
         ui.isPanning = false;
         return;
@@ -504,6 +585,9 @@ export class InteractionController {
         if (res.success) {
           ui._updateCoinsDisplay();
           ui._setHint(ui.levelDef.hint);
+          if (ui.tutorialController) {
+            ui.tutorialController.handleEvent('wire_connected');
+          }
         } else {
           ui._setHint(res.message, true);
         }

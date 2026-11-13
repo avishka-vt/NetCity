@@ -8,6 +8,7 @@
 export class GameLoop {
   constructor(options = {}) {
     this.simProvider = options.getSim || (() => null);
+    this.isPaused = options.isPaused || (() => false);
     this.onTick = options.onTick || (() => {});
     this.onRender = options.onRender || (() => {});
     this.onWin = options.onWin || (() => {});
@@ -40,7 +41,8 @@ export class GameLoop {
       this.lastTime = time;
 
       const sim = this.simProvider();
-      if (sim && sim.status === 'playing' && !sim.paused) {
+      const isModalPaused = (typeof this.isPaused === 'function') ? this.isPaused() : false;
+      if (sim && sim.status === 'playing' && !sim.paused && !sim.modalOpen && !isModalPaused) {
         this.tickAccumulator += dt * (this.gameSpeed || 1);
         while (this.tickAccumulator >= 50) {
           const events = sim.tick();
